@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, HostListener, afterNextRender, effe
 import { RouterLink } from '@angular/router';
 
 import { ThemeService } from '../core/theme.service';
+import { CommandPaletteService } from './command-palette';
 import { Avatar } from '../shared/avatar';
 import { Icon } from '../shared/icon';
 
@@ -29,6 +30,9 @@ export interface NavItem {
           }
         </nav>
         <div class="actions">
+          <button class="search-btn" type="button" (click)="palette.open.set(true)" aria-label="Rechercher (Ctrl+K)">
+            <app-icon name="search" [size]="15" /><span class="label">Rechercher</span><kbd>{{ shortcut }}</kbd>
+          </button>
           <button class="btn btn-ghost btn-icon" type="button" (click)="theme.toggle()"
             [attr.aria-label]="theme.theme() === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'">
             <app-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18" />
@@ -61,7 +65,13 @@ export interface NavItem {
     .nav a.active { color: var(--text); background: var(--accent-soft); }
     .nav a.active::after { content: ''; position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px; margin-left: -2px;
       border-radius: 50%; background: var(--cyan); }
-    .actions { display: flex; gap: 4px; margin-left: 4px; }
+    .actions { display: flex; align-items: center; gap: 4px; margin-left: 4px; }
+    .search-btn { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px 0 10px; margin-right: 4px;
+      border-radius: 10px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text-faint); cursor: pointer;
+      font: 400 13px var(--font); transition: border-color 0.2s ease, color 0.2s ease; }
+    .search-btn:hover { border-color: var(--border-strong); color: var(--text); }
+    .search-btn kbd { font: 500 11px var(--mono); padding: 1px 5px; border-radius: 5px; border: 1px solid var(--border-strong); }
+    @media (max-width: 1000px) { .search-btn .label, .search-btn kbd { display: none; } .search-btn { padding: 0 9px; } }
     .menu-toggle { display: none; }
     @media (max-width: 760px) {
       .nav { display: none; position: absolute; top: var(--header-h); left: 0; right: 0; flex-direction: column; border-radius: 0;
@@ -76,6 +86,8 @@ export interface NavItem {
 })
 export class SiteHeader {
   protected readonly theme = inject(ThemeService);
+  protected readonly palette = inject(CommandPaletteService);
+  protected readonly shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
   readonly items = input<NavItem[]>([]);
   readonly avatarUrl = input<string | null>(null);
   readonly name = input('Mohamed Mansour TALEB');

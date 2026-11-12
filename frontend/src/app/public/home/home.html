@@ -2,7 +2,7 @@
   [name]="data()?.profile?.fullName ?? ''" />
 
 @if (data(); as d) {
-  <main>
+  <main id="main">
     <!-- ================= Héros ================= -->
     <section class="hero">
       <div class="container hero-grid">
@@ -21,6 +21,8 @@
             }
             @if (d.profile.cvUrl) {
               <a class="btn" [href]="d.profile.cvUrl" target="_blank" rel="noopener"><app-icon name="download" [size]="16" /> Télécharger le CV</a>
+            } @else {
+              <a class="btn" routerLink="/cv"><app-icon name="download" [size]="16" /> Voir le CV</a>
             }
             @if (sections().includes('contact')) {
               <a class="btn btn-ghost" routerLink="/" fragment="contact">Me contacter</a>

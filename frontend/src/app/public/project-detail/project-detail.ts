@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
-import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 
 import { AnalyticsService } from '../../core/analytics.service';
 import { Project } from '../../core/models';
+import { SeoService } from '../../core/seo.service';
 import { PublicApiService } from '../../core/public-api.service';
 import { Icon } from '../../shared/icon';
 import { Gallery } from '../gallery';
@@ -14,7 +14,7 @@ import { SiteHeader } from '../site-header';
   imports: [RouterLink, Icon, SiteHeader, Gallery],
   template: `
     <app-site-header [avatarUrl]="avatarUrl()" [name]="ownerName()" />
-    <main class="container page">
+    <main id="main" class="container page">
       <a class="back" routerLink="/" fragment="projects"><app-icon name="arrow-left" [size]="16" /> Tous les projets</a>
       @if (project(); as p) {
         <header class="head">
@@ -140,7 +140,7 @@ import { SiteHeader } from '../site-header';
 })
 export class ProjectDetail {
   private readonly api = inject(PublicApiService);
-  private readonly title = inject(Title);
+  private readonly seo = inject(SeoService);
   private readonly analytics = inject(AnalyticsService);
   readonly slug = input.required<string>();
 
@@ -161,7 +161,14 @@ export class ProjectDetail {
       this.api.project(slug).subscribe({
         next: (p) => {
           this.project.set(p);
-          this.title.setTitle(`${p.title} — Projet`);
+          this.seo.update({
+            title: `${p.title} — ${this.ownerName() || 'Projet'}`,
+            description: p.summary ?? p.tagline,
+            path: `/projects/${p.slug}`,
+            image: p.images?.[0]?.url,
+            type: 'article',
+          });
+          this.seo.projectSchema(p, this.ownerName());
           this.analytics.projectView(p.slug);
         },
         error: () => this.notFound.set(true),

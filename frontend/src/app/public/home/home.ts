@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Meta, Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { ApiProblem, Portfolio, SectionKey } from '../../core/models';
 import { PublicApiService } from '../../core/public-api.service';
+import { SeoService } from '../../core/seo.service';
 import { ThemeService } from '../../core/theme.service';
 import { Avatar } from '../../shared/avatar';
 import { Icon } from '../../shared/icon';
@@ -32,8 +32,7 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
 export class Home {
   private readonly api = inject(PublicApiService);
   private readonly theme = inject(ThemeService);
-  private readonly title = inject(Title);
-  private readonly meta = inject(Meta);
+  private readonly seo = inject(SeoService);
 
   protected readonly labels = SECTION_LABELS;
   protected readonly data = signal<Portfolio | null>(null);
@@ -105,10 +104,14 @@ export class Home {
       next: (portfolio) => {
         this.data.set(portfolio);
         this.theme.useDefault(portfolio.settings.defaultTheme);
-        this.title.setTitle(portfolio.settings.siteTitle);
-        if (portfolio.settings.metaDescription) {
-          this.meta.updateTag({ name: 'description', content: portfolio.settings.metaDescription });
-        }
+        this.seo.update({
+          title: portfolio.settings.siteTitle,
+          description: portfolio.settings.metaDescription ?? portfolio.profile.tagline,
+          path: '/',
+          image: portfolio.profile.avatarUrl,
+          type: 'profile',
+        });
+        this.seo.personSchema(portfolio);
       },
       error: () => this.loadError.set(true),
     });

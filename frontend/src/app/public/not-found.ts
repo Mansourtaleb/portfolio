@@ -10,7 +10,7 @@ import { SiteHeader } from './site-header';
   imports: [RouterLink, Icon, SiteHeader],
   template: `
     <app-site-header />
-    <main class="container wrap">
+    <main id="main" class="container wrap">
       <p class="code mono gradient-text">404</p>
       <p class="mono prompt">&gt; page.introuvable()</p>
       <h1>Cette page n'existe pas (ou plus).</h1>

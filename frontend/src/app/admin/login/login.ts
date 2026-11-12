@@ -10,7 +10,7 @@ import { Icon } from '../../shared/icon';
   selector: 'app-login',
   imports: [FormsModule, RouterLink, Icon],
   template: `
-    <main class="min-h-screen grid place-items-center px-4 bg-bg">
+    <main id="main" class="min-h-screen grid place-items-center px-4 bg-bg">
       <form class="card w-full max-w-sm" (ngSubmit)="submit()" #f="ngForm">
         <div class="flex items-center gap-3 mb-6">
           <span class="grid place-items-center w-10 h-10 rounded-xl bg-accent-soft text-accent"><app-icon name="lock" /></span>

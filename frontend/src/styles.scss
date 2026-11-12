@@ -13,7 +13,7 @@
   --border-strong: #334155;
   --text: #e2e8f0;
   --text-muted: #94a3b8;
-  --text-faint: #64748b;
+  --text-faint: #7c8aa3;
   --accent: #818cf8;
   --accent-strong: #6366f1;
   --accent-soft: rgba(99, 102, 241, 0.16);
@@ -136,6 +136,38 @@ img {
   max-width: var(--container);
   margin: 0 auto;
   padding: 0 20px;
+}
+
+/* Listes à puces de contenu (le reset de Tailwind retire les puces par défaut) */
+.highlights,
+.rich ul,
+.answer ul,
+.sheet ul:not(.projects) {
+  list-style: disc;
+}
+.sheet .projects {
+  list-style: square;
+}
+
+/* Lien d'évitement : invisible tant qu'il n'a pas le focus clavier */
+.skip-link {
+  position: fixed;
+  left: 12px;
+  top: -60px;
+  z-index: 300;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--accent-strong);
+  color: #fff;
+  font-weight: 600;
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 12px;
+  text-decoration: none;
+}
+main:focus {
+  outline: none;
 }
 
 .mono {

@@ -58,7 +58,7 @@ interface NavLink {
             <button class="btn btn-sm btn-ghost" type="button" (click)="auth.logout()"><app-icon name="logout" [size]="15" /> Déconnexion</button>
           </div>
         </header>
-        <main class="p-4 sm:p-8 max-w-6xl w-full">
+        <main id="main" class="p-4 sm:p-8 max-w-6xl w-full">
           <router-outlet />
         </main>
       </div>

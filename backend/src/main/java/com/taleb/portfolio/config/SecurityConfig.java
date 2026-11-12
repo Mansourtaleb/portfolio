@@ -50,6 +50,7 @@ class SecurityConfig {
 						.requestMatchers("/api/admin/**").hasAuthority("SCOPE_admin")
 						.requestMatchers("/api/public/**", "/actuator/health", "/error").permitAll()
 						.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+						.requestMatchers("/sitemap.xml", "/robots.txt").permitAll()
 						.anyRequest().denyAll())
 				.oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()));
 		return http.build();

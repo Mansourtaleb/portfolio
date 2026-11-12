@@ -10,6 +10,7 @@ export const routes: Routes = [
     path: 'projects/:slug',
     loadComponent: () => import('./public/project-detail/project-detail').then((m) => m.ProjectDetail),
   },
+  { path: 'cv', loadComponent: () => import('./public/cv-page').then((m) => m.CvPage), title: 'CV' },
   { path: 'admin/login', loadComponent: () => import('./admin/login/login').then((m) => m.Login), title: 'Connexion' },
   {
     path: 'admin',
