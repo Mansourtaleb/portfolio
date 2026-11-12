@@ -2,7 +2,16 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { AssistantStatus, ContactMessage, CvInfo, Profile, SearchHit, SiteSettings } from './models';
+import {
+  AnalyticsReport,
+  AssistantStatus,
+  ContactMessage,
+  CvInfo,
+  Profile,
+  ProjectImage,
+  SearchHit,
+  SiteSettings,
+} from './models';
 
 type Item = { id: number | null } & Record<string, unknown>;
 
@@ -45,6 +54,34 @@ export class AdminApiService {
 
   saveSettings(settings: SiteSettings): Observable<SiteSettings> {
     return this.http.put<SiteSettings>('/api/admin/settings', settings);
+  }
+
+  projectImages(projectId: number): Observable<ProjectImage[]> {
+    return this.http.get<ProjectImage[]>(`/api/admin/projects/${projectId}/images`);
+  }
+
+  uploadProjectImage(projectId: number, image: Blob, width: number, height: number): Observable<ProjectImage> {
+    const body = new FormData();
+    body.append('file', image, image.type === 'image/webp' ? 'capture.webp' : 'capture.png');
+    body.append('width', String(width));
+    body.append('height', String(height));
+    return this.http.post<ProjectImage>(`/api/admin/projects/${projectId}/images`, body);
+  }
+
+  updateImageCaption(projectId: number, imageId: number, caption: string): Observable<ProjectImage> {
+    return this.http.put<ProjectImage>(`/api/admin/projects/${projectId}/images/${imageId}`, { caption });
+  }
+
+  reorderProjectImages(projectId: number, ids: number[]): Observable<ProjectImage[]> {
+    return this.http.put<ProjectImage[]>(`/api/admin/projects/${projectId}/images/order`, ids);
+  }
+
+  deleteProjectImage(projectId: number, imageId: number): Observable<void> {
+    return this.http.delete<void>(`/api/admin/projects/${projectId}/images/${imageId}`);
+  }
+
+  analytics(days: number): Observable<AnalyticsReport> {
+    return this.http.get<AnalyticsReport>('/api/admin/analytics', { params: { days } });
   }
 
   avatar(): Observable<{ url: string } | null> {

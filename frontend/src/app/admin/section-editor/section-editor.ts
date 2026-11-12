@@ -8,6 +8,7 @@ import { Icon } from '../../shared/icon';
 import { ToastService } from '../../shared/toast';
 import { HasUnsavedChanges, UNSAVED_MESSAGE } from '../../shared/unsaved-changes';
 import { DynamicForm } from './dynamic-form';
+import { ProjectGallery } from './project-gallery';
 import { sectionByKey } from './sections';
 
 type Item = { id: number; visible: boolean; sortOrder: number } & Record<string, any>;
@@ -15,7 +16,7 @@ type Item = { id: number; visible: boolean; sortOrder: number } & Record<string,
 /** Écran CRUD générique : liste, création, édition, suppression, ordre (glisser-déposer) et publication. */
 @Component({
   selector: 'app-section-editor',
-  imports: [Icon, DynamicForm, CdkDropList, CdkDrag, CdkDragHandle],
+  imports: [Icon, DynamicForm, CdkDropList, CdkDrag, CdkDragHandle, ProjectGallery],
   template: `
     <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
       <div>
@@ -35,6 +36,13 @@ type Item = { id: number; visible: boolean; sortOrder: number } & Record<string,
           <button class="btn btn-ghost" type="button" (click)="cancel()">Annuler</button>
         </app-dynamic-form>
       </section>
+      @if (def().key === 'projects') {
+        @if (editing(); as project) {
+          <section class="card mb-6"><app-project-gallery [projectId]="project.id" /></section>
+        } @else {
+          <p class="text-sm text-faint mb-6">La galerie d'images sera disponible après le premier enregistrement du projet.</p>
+        }
+      }
     }
 
     <div class="flex items-center justify-between mb-2 text-xs text-faint">

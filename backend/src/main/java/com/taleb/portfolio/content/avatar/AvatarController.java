@@ -1,5 +1,6 @@
 package com.taleb.portfolio.content.avatar;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.taleb.portfolio.content.avatar.AvatarService.AvatarInfo;
 
+@Tag(name = "Photo de profil", description = "Image publique et gestion de l'avatar")
 @RestController
 class AvatarController {
 

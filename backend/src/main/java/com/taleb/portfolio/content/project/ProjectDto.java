@@ -31,13 +31,19 @@ public record ProjectDto(
 		@Size(max = 300) String confidentialNote,
 		Boolean featured,
 		Integer sortOrder,
-		Boolean visible) implements SectionDto<Project> {
+		Boolean visible,
+		/** Galerie (lecture seule : gérée par les endpoints /images). */
+		List<ProjectImageService.ImageRef> images) implements SectionDto<Project> {
 
 	public static ProjectDto from(Project e) {
+		return from(e, List.of());
+	}
+
+	public static ProjectDto from(Project e, List<ProjectImageService.ImageRef> images) {
 		return new ProjectDto(e.getId(), e.getSlug(), e.getTitle(), e.getTagline(), e.getContext(), e.getPeriod(),
 				e.getStatus(), e.getSummary(), e.getDescription(), e.getRole(), List.copyOf(e.getHighlights()),
 				List.copyOf(e.getStack()), List.copyOf(e.getArchitecture()), e.getRepoUrl(), e.getDemoUrl(), e.isConfidential(), e.getConfidentialNote(),
-				e.isFeatured(), e.getSortOrder(), e.isVisible());
+				e.isFeatured(), e.getSortOrder(), e.isVisible(), images);
 	}
 
 	@Override

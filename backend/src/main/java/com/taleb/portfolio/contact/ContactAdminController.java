@@ -1,5 +1,6 @@
 package com.taleb.portfolio.contact;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.taleb.portfolio.contact.ContactService.ContactMessageView;
 
+@Tag(name = "Admin · Messages", description = "Messages reçus via le formulaire de contact")
 @RestController
 @RequestMapping("/api/admin/messages")
 class ContactAdminController {

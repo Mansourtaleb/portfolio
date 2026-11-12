@@ -85,6 +85,13 @@ export interface Project extends SectionItem {
   confidential: boolean;
   confidentialNote: string | null;
   featured: boolean;
+  images?: ProjectImage[];
+}
+
+export interface ProjectImage {
+  id: number;
+  url: string;
+  caption: string | null;
 }
 
 export interface Education extends SectionItem {
@@ -164,4 +171,29 @@ export interface ApiProblem {
   status: number;
   detail?: string;
   errors?: Record<string, string>;
+}
+
+export interface AnalyticsTotals {
+  pageViews: number;
+  visitors: number;
+  projectViews: number;
+  cvDownloads: number;
+  assistantQuestions: number;
+  contactMessages: number;
+}
+
+export interface AnalyticsCount {
+  label: string;
+  total: number;
+}
+
+export interface AnalyticsReport {
+  days: number;
+  totals: AnalyticsTotals;
+  previous: AnalyticsTotals;
+  daily: { day: string; views: number; visitors: number }[];
+  topProjects: AnalyticsCount[];
+  referrers: AnalyticsCount[];
+  devices: AnalyticsCount[];
+  topPages: AnalyticsCount[];
 }

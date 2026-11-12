@@ -199,7 +199,12 @@
               }
               <div class="projects-grid">
                 @for (p of filteredProjects(); track p.id; let i = $index) {
-                  <article class="card card-hover project-card" [class.featured]="p.featured && !techFilter()" [appReveal]="i * 60">
+                  <article class="card card-hover project-card" [class.featured]="p.featured && !techFilter()" [class.has-cover]="p.images?.length" [appReveal]="i * 60">
+                    @if (p.images?.length) {
+                      <a class="cover" [routerLink]="['/projects', p.slug]" tabindex="-1" aria-hidden="true">
+                        <img [src]="p.images![0].url" alt="" loading="lazy" />
+                      </a>
+                    }
                     <div class="project-top">
                       <div class="chips">
                         @if (p.context) {

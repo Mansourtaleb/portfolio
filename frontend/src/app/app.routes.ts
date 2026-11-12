@@ -37,6 +37,11 @@ export const routes: Routes = [
         title: 'Réglages',
       },
       {
+        path: 'statistiques',
+        loadComponent: () => import('./admin/analytics/analytics-page').then((m) => m.AnalyticsPage),
+        title: 'Statistiques',
+      },
+      {
         path: 'messages',
         loadComponent: () => import('./admin/messages/messages').then((m) => m.Messages),
         title: 'Messages',

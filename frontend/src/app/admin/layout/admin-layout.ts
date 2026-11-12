@@ -39,6 +39,9 @@ interface NavLink {
             }
           }
         </nav>
+        <a class="nav-link mt-4" href="/swagger-ui.html" target="_blank" rel="noopener">
+          <app-icon name="file-code" [size]="17" /> Documentation API <app-icon class="ml-auto" name="external" [size]="13" />
+        </a>
       </aside>
 
       <div class="flex flex-col min-w-0">
@@ -88,7 +91,13 @@ export class AdminLayout {
   protected readonly unread = signal(0);
 
   protected readonly groups: { title: string; links: NavLink[] }[] = [
-    { title: 'Général', links: [{ path: '/admin', label: 'Tableau de bord', icon: 'home', exact: true }] },
+    {
+      title: 'Général',
+      links: [
+        { path: '/admin', label: 'Tableau de bord', icon: 'home', exact: true },
+        { path: '/admin/statistiques', label: 'Statistiques', icon: 'chart' },
+      ],
+    },
     {
       title: 'Vitrine',
       links: [

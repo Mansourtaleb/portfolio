@@ -1,5 +1,6 @@
 package com.taleb.portfolio.publicapi;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Duration;
 import java.util.List;
 
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.taleb.portfolio.analytics.AnalyticsService;
+import com.taleb.portfolio.analytics.AnalyticsService.EventType;
 import com.taleb.portfolio.assistant.AssistantService;
 import com.taleb.portfolio.common.ClientIp;
 import com.taleb.portfolio.common.NotFoundException;
@@ -37,6 +40,7 @@ import com.taleb.portfolio.content.profile.ProfileDto;
 import com.taleb.portfolio.content.profile.ProfileService;
 import com.taleb.portfolio.content.project.Project;
 import com.taleb.portfolio.content.project.ProjectDto;
+import com.taleb.portfolio.content.project.ProjectImageService;
 import com.taleb.portfolio.content.project.ProjectRepository;
 import com.taleb.portfolio.content.settings.SiteSettingsDto;
 import com.taleb.portfolio.content.settings.SiteSettingsService;
@@ -47,6 +51,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 /** API publique de la vitrine : lecture seule, uniquement le contenu marqué visible. */
+@Tag(name = "Vitrine", description = "Contenu public de la vitrine et formulaire de contact")
 @RestController
 @RequestMapping("/api/public")
 class PublicController {
@@ -64,6 +69,8 @@ class PublicController {
 	private final AssistantService assistantService;
 	private final CvService cvService;
 	private final AvatarService avatarService;
+	private final ProjectImageService imageService;
+	private final AnalyticsService analytics;
 	private final RateLimiter contactLimiter = new RateLimiter(3, Duration.ofMinutes(10));
 
 	PublicController(ProfileService profileService, SiteSettingsService settingsService,
@@ -72,7 +79,9 @@ class PublicController {
 			SectionService<Certification, CertificationDto> certifications,
 			SectionService<SpokenLanguage, SpokenLanguageDto> languages, ProjectRepository projectRepository,
 			ContactService contactService, AssistantService assistantService, CvService cvService,
-			AvatarService avatarService) {
+			AvatarService avatarService, ProjectImageService imageService, AnalyticsService analytics) {
+		this.analytics = analytics;
+		this.imageService = imageService;
 		this.cvService = cvService;
 		this.avatarService = avatarService;
 		this.profileService = profileService;
@@ -107,7 +116,7 @@ class PublicController {
 	@GetMapping("/projects/{slug}")
 	@Transactional(readOnly = true)
 	ProjectDto project(@PathVariable String slug) {
-		return projectRepository.findBySlugAndVisibleTrue(slug).map(ProjectDto::from)
+		return projectRepository.findBySlugAndVisibleTrue(slug).map(pr -> ProjectDto.from(pr, imageService.refs(pr.getId())))
 				.orElseThrow(() -> new NotFoundException("Projet introuvable"));
 	}
 
@@ -122,6 +131,7 @@ class PublicController {
 			return; // robot : on fait comme si tout allait bien, sans rien enregistrer
 		}
 		contactService.submit(request);
+		analytics.record(EventType.CONTACT_MESSAGE, http, null, null, null);
 	}
 
 	record PortfolioView(PublicProfile profile, PublicSettings settings, List<SkillGroupDto> skills,

@@ -2,14 +2,16 @@ import { ChangeDetectionStrategy, Component, effect, inject, input, signal } fro
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 
+import { AnalyticsService } from '../../core/analytics.service';
 import { Project } from '../../core/models';
 import { PublicApiService } from '../../core/public-api.service';
 import { Icon } from '../../shared/icon';
+import { Gallery } from '../gallery';
 import { SiteHeader } from '../site-header';
 
 @Component({
   selector: 'app-project-detail',
-  imports: [RouterLink, Icon, SiteHeader],
+  imports: [RouterLink, Icon, SiteHeader, Gallery],
   template: `
     <app-site-header [avatarUrl]="avatarUrl()" [name]="ownerName()" />
     <main class="container page">
@@ -29,6 +31,7 @@ import { SiteHeader } from '../site-header';
 
         <div class="layout">
           <article class="content">
+            @if (p.images?.length) { <app-gallery class="gallery" [images]="p.images!" /> }
             @if (p.summary) { <p class="lead">{{ p.summary }}</p> }
             @if (p.description) {
               <h2>Le projet</h2>
@@ -108,6 +111,7 @@ import { SiteHeader } from '../site-header';
     .tagline { font-size: 19px; color: var(--text-muted); margin-top: 10px; max-width: 760px; }
     .layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 32px; align-items: start; }
     .lead { font-size: 18px; line-height: 1.7; }
+    .gallery { margin-bottom: 28px; }
     h2 { font-size: 20px; margin: 32px 0 12px; }
     .para { color: var(--text-muted); line-height: 1.75; margin-bottom: 10px; }
     .highlights { padding-left: 20px; color: var(--text-muted); }
@@ -137,6 +141,7 @@ import { SiteHeader } from '../site-header';
 export class ProjectDetail {
   private readonly api = inject(PublicApiService);
   private readonly title = inject(Title);
+  private readonly analytics = inject(AnalyticsService);
   readonly slug = input.required<string>();
 
   protected readonly project = signal<Project | null>(null);
@@ -157,6 +162,7 @@ export class ProjectDetail {
         next: (p) => {
           this.project.set(p);
           this.title.setTitle(`${p.title} — Projet`);
+          this.analytics.projectView(p.slug);
         },
         error: () => this.notFound.set(true),
       });

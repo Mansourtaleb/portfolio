@@ -1,5 +1,6 @@
 package com.taleb.portfolio.auth;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -26,6 +27,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+@Tag(name = "Authentification", description = "Connexion admin (JWT), session et mot de passe")
 @RestController
 @RequestMapping("/api/auth")
 class AuthController {

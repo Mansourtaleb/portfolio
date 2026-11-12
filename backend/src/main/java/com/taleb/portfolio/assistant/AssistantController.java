@@ -1,5 +1,6 @@
 package com.taleb.portfolio.assistant;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.taleb.portfolio.analytics.AnalyticsService;
+import com.taleb.portfolio.analytics.AnalyticsService.EventType;
 import com.taleb.portfolio.common.ClientIp;
 import com.taleb.portfolio.content.settings.SiteSettingsService;
 
@@ -20,6 +23,7 @@ import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
+@Tag(name = "Assistant IA", description = "Questions des visiteurs (RAG + Claude, SSE) et supervision de l'index")
 @RestController
 class AssistantController {
 
@@ -28,9 +32,12 @@ class AssistantController {
 	private final AssistantService assistant;
 	private final KnowledgeIndex index;
 	private final SiteSettingsService settings;
+	private final AnalyticsService analytics;
 	private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
-	AssistantController(AssistantService assistant, KnowledgeIndex index, SiteSettingsService settings) {
+	AssistantController(AssistantService assistant, KnowledgeIndex index, SiteSettingsService settings,
+			AnalyticsService analytics) {
+		this.analytics = analytics;
 		this.assistant = assistant;
 		this.index = index;
 		this.settings = settings;
@@ -43,6 +50,7 @@ class AssistantController {
 			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "L'assistant est désactivé.");
 		}
 		assistant.checkQuota(ClientIp.of(http));
+		analytics.record(EventType.ASSISTANT_QUESTION, http, null, null, null);
 		SseEmitter emitter = new SseEmitter(STREAM_TIMEOUT_MS);
 		executor.execute(() -> assistant.streamAnswer(request, emitter));
 		return emitter;

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.taleb.portfolio.common.ImageTypes;
 import com.taleb.portfolio.common.NotFoundException;
 
 /**
@@ -48,7 +49,7 @@ public class AvatarService {
 			throw new IllegalArgumentException("La photo ne doit pas dépasser 2 Mo.");
 		}
 		byte[] bytes = file.getBytes();
-		String contentType = detectImageType(bytes)
+		String contentType = ImageTypes.detect(bytes)
 				.orElseThrow(() -> new IllegalArgumentException("Formats acceptés : WebP, PNG ou JPEG."));
 		AvatarImage image = repository.findById(AvatarImage.SINGLETON_ID).orElseGet(AvatarImage::new);
 		image.replace(contentType, bytes);
@@ -59,21 +60,6 @@ public class AvatarService {
 	@Transactional
 	public void delete() {
 		repository.deleteById(AvatarImage.SINGLETON_ID);
-	}
-
-	/** Type d'image déduit des premiers octets (on ne fait pas confiance au nom ni au Content-Type). */
-	static Optional<String> detectImageType(byte[] b) {
-		if (b.length >= 12 && b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F' && b[8] == 'W' && b[9] == 'E'
-				&& b[10] == 'B' && b[11] == 'P') {
-			return Optional.of("image/webp");
-		}
-		if (b.length >= 8 && (b[0] & 0xFF) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G') {
-			return Optional.of("image/png");
-		}
-		if (b.length >= 3 && (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8 && (b[2] & 0xFF) == 0xFF) {
-			return Optional.of("image/jpeg");
-		}
-		return Optional.empty();
 	}
 
 	private static String versionedUrl(AvatarImage image) {

@@ -22,6 +22,7 @@ import com.taleb.portfolio.content.language.SpokenLanguageDto;
 import com.taleb.portfolio.content.language.SpokenLanguageRepository;
 import com.taleb.portfolio.content.project.Project;
 import com.taleb.portfolio.content.project.ProjectDto;
+import com.taleb.portfolio.content.project.ProjectImageService;
 import com.taleb.portfolio.content.project.ProjectRepository;
 import com.taleb.portfolio.content.skill.SkillGroup;
 import com.taleb.portfolio.content.skill.SkillGroupDto;
@@ -43,8 +44,9 @@ class ContentConfig {
 	}
 
 	@Bean
-	SectionService<Project, ProjectDto> projectService(ProjectRepository repo, ApplicationEventPublisher events) {
-		return new SectionService<>("projects", repo, Project::new, ProjectDto::from, events);
+	SectionService<Project, ProjectDto> projectService(ProjectRepository repo, ProjectImageService images,
+			ApplicationEventPublisher events) {
+		return new SectionService<>("projects", repo, Project::new, p -> ProjectDto.from(p, images.refs(p.getId())), events);
 	}
 
 	@Bean
