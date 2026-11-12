@@ -124,17 +124,50 @@ class PortfolioApiIntegrationTest {
 				.andExpect(jsonPath("$.visible").value(true))
 				.andReturn().getResponse().getContentAsString();
 		long id = Long.parseLong(extract(body, "\"id\":(\\d+)"));
+		// Brouillon : invisible pour les visiteurs tant que ce n'est pas publié.
+		mvc.perform(get("/api/public/portfolio")).andExpect(jsonPath("$.languages[*].name").value(not(hasItem("Italien"))));
+		publish();
 
 		mvc.perform(get("/api/public/portfolio")).andExpect(jsonPath("$.languages[*].name").value(hasItem("Italien")));
 
 		mvc.perform(admin(put("/api/admin/languages/" + id)).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":\"Italien\",\"level\":\"A2\",\"visible\":false}"))
 				.andExpect(status().isOk());
+		publish();
 		mvc.perform(get("/api/public/portfolio"))
 				.andExpect(jsonPath("$.languages[*].name").value(not(hasItem("Italien"))));
 
 		mvc.perform(admin(delete("/api/admin/languages/" + id))).andExpect(status().isNoContent());
 		mvc.perform(admin(get("/api/admin/languages/" + id))).andExpect(status().isNotFound());
+	}
+
+	@Test
+	@DisplayName("Brouillon / publication + traduction anglaise avec repli sur le français")
+	void draftPublicationAndEnglish() throws Exception {
+		publish();
+		mvc.perform(admin(put("/api/admin/translations/profile/1")).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"headline\":\"Full-Stack Engineer\",\"qualities\":[\"Autonomy\",\"Rigor\"],\"fullName\":\"ignoré\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.headline").value("Full-Stack Engineer"))
+				.andExpect(jsonPath("$.fullName").doesNotExist());
+
+		// Brouillon : la vitrine publiée ne change pas, l'aperçu admin si.
+		mvc.perform(admin(get("/api/admin/publication"))).andExpect(jsonPath("$.pendingChanges").value(true));
+		mvc.perform(get("/api/public/portfolio?lang=en"))
+				.andExpect(jsonPath("$.profile.headline").value(not("Full-Stack Engineer")));
+		mvc.perform(admin(get("/api/admin/preview/portfolio?lang=en")))
+				.andExpect(jsonPath("$.profile.headline").value("Full-Stack Engineer"));
+
+		publish();
+		mvc.perform(admin(get("/api/admin/publication"))).andExpect(jsonPath("$.pendingChanges").value(false));
+		mvc.perform(get("/api/public/portfolio?lang=en"))
+				.andExpect(jsonPath("$.lang").value("en"))
+				.andExpect(jsonPath("$.profile.headline").value("Full-Stack Engineer"))
+				.andExpect(jsonPath("$.profile.qualities[0]").value("Autonomy"))
+				// non traduit : repli sur le français
+				.andExpect(jsonPath("$.profile.location").value("Bizerte, Tunisie"));
+		mvc.perform(get("/api/public/portfolio"))
+				.andExpect(jsonPath("$.profile.headline").value(not("Full-Stack Engineer")));
 	}
 
 	@Test
@@ -217,6 +250,10 @@ class PortfolioApiIntegrationTest {
 				.andExpect(status().isOk())
 				.andReturn().getResponse().getContentAsString();
 		return extract(body, "\"token\":\"([^\"]+)\"");
+	}
+
+	private void publish() throws Exception {
+		mvc.perform(admin(post("/api/admin/publication/publish"))).andExpect(status().isOk());
 	}
 
 	private long countMessages() {

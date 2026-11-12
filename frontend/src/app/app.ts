@@ -4,17 +4,19 @@ import { RouterOutlet } from '@angular/router';
 import { CommandPalette } from './public/command-palette';
 
 import { AnalyticsService } from './core/analytics.service';
+import { I18nService } from './core/i18n';
 import { ThemeService } from './core/theme.service';
 
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, CommandPalette],
-  template: `<a class="skip-link" href="#main" (click)="skip($event)">Aller au contenu principal</a>
+  template: `<a class="skip-link" href="#main" (click)="skip($event)">{{ i18n.t('skip') }}</a>
     <router-outlet /><app-command-palette />`,
 })
 export class App {
   // Instancié dès le démarrage pour appliquer le thème avant le premier rendu.
   protected readonly theme = inject(ThemeService);
+  protected readonly i18n = inject(I18nService);
 
   constructor() {
     inject(AnalyticsService).start();

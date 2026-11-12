@@ -1,23 +1,24 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { TranslatePipe } from '../core/i18n';
 import { Icon } from '../shared/icon';
 import { SiteHeader } from './site-header';
 
 /** Page 404 : utilisée pour les adresses inconnues et les projets introuvables. */
 @Component({
   selector: 'app-not-found',
-  imports: [RouterLink, Icon, SiteHeader],
+  imports: [RouterLink, Icon, SiteHeader, TranslatePipe],
   template: `
     <app-site-header />
     <main id="main" class="container wrap">
       <p class="code mono gradient-text">404</p>
       <p class="mono prompt">&gt; page.introuvable()</p>
-      <h1>Cette page n'existe pas (ou plus).</h1>
-      <p class="muted">Le lien est peut-être erroné, ou le contenu a été retiré de la vitrine.</p>
+      <h1>{{ 'notFound.title' | t }}</h1>
+      <p class="muted">{{ 'notFound.text' | t }}</p>
       <div class="actions">
-        <a class="btn btn-primary" routerLink="/"><app-icon name="home" [size]="16" /> Retour à l'accueil</a>
-        <a class="btn" routerLink="/" fragment="projects">Voir les projets</a>
+        <a class="btn btn-primary" routerLink="/"><app-icon name="home" [size]="16" /> {{ 'notFound.home' | t }}</a>
+        <a class="btn" routerLink="/" fragment="projects">{{ 'hero.projects' | t }}</a>
       </div>
     </main>
   `,

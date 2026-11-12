@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { AnalyticsService } from '../../core/analytics.service';
 import { Project } from '../../core/models';
 import { SeoService } from '../../core/seo.service';
+import { I18nService, TranslatePipe } from '../../core/i18n';
 import { PublicApiService } from '../../core/public-api.service';
 import { Icon } from '../../shared/icon';
 import { Gallery } from '../gallery';
@@ -11,18 +12,19 @@ import { SiteHeader } from '../site-header';
 
 @Component({
   selector: 'app-project-detail',
-  imports: [RouterLink, Icon, SiteHeader, Gallery],
+  imports: [RouterLink, Icon, SiteHeader, Gallery, TranslatePipe],
   template: `
     <app-site-header [avatarUrl]="avatarUrl()" [name]="ownerName()" />
+    @if (api.preview) { <div class="preview-banner">{{ 'preview.banner' | t }}</div> }
     <main id="main" class="container page">
-      <a class="back" routerLink="/" fragment="projects"><app-icon name="arrow-left" [size]="16" /> Tous les projets</a>
+      <a class="back" routerLink="/" fragment="projects"><app-icon name="arrow-left" [size]="16" /> {{ 'project.back' | t }}</a>
       @if (project(); as p) {
         <header class="head">
           <div class="chips">
             @if (p.context) { <span class="chip chip-accent">{{ p.context }}</span> }
             @if (p.period) { <span class="chip mono">{{ p.period }}</span> }
             <span class="chip" [class.chip-warning]="p.status === 'IN_PROGRESS'" [class.chip-success]="p.status === 'DONE'">
-              {{ p.status === 'IN_PROGRESS' ? 'En cours' : 'Terminé' }}
+              {{ (p.status === 'IN_PROGRESS' ? 'projects.inProgress' : 'projects.done') | t }}
             </span>
           </div>
           <h1>{{ p.title }}</h1>
@@ -34,15 +36,15 @@ import { SiteHeader } from '../site-header';
             @if (p.images?.length) { <app-gallery class="gallery" [images]="p.images!" /> }
             @if (p.summary) { <p class="lead">{{ p.summary }}</p> }
             @if (p.description) {
-              <h2>Le projet</h2>
+              <h2>{{ 'project.about' | t }}</h2>
               @for (para of paragraphs(p.description); track $index) { <p class="para">{{ para }}</p> }
             }
             @if (p.role) {
-              <h2>Mon rôle</h2>
+              <h2>{{ 'project.role' | t }}</h2>
               <p class="para">{{ p.role }}</p>
             }
             @if (p.architecture.length) {
-              <h2>Architecture</h2>
+              <h2>{{ 'project.architecture' | t }}</h2>
               <ol class="arch" aria-label="Schéma d'architecture">
                 @for (layer of layers(p.architecture); track $index; let last = $last) {
                   <li class="arch-node card">
@@ -57,7 +59,7 @@ import { SiteHeader } from '../site-header';
               </ol>
             }
             @if (p.highlights.length) {
-              <h2>Réalisations clés</h2>
+              <h2>{{ 'project.highlights' | t }}</h2>
               <ul class="highlights">
                 @for (h of p.highlights; track h) { <li>{{ h }}</li> }
               </ul>
@@ -65,23 +67,23 @@ import { SiteHeader } from '../site-header';
           </article>
 
           <aside class="card side">
-            <h3>Stack technique</h3>
+            <h3>{{ 'project.stack' | t }}</h3>
             <div class="chips">
               @for (t of p.stack; track t) { <span class="chip">{{ t }}</span> }
             </div>
             @if (p.confidential) {
               <div class="confidential">
                 <app-icon name="lock" [size]="18" />
-                <p>{{ p.confidentialNote || 'Projet confidentiel : le code source n’est pas public.' }}</p>
+                <p>{{ p.confidentialNote || ('project.confidential' | t) }}</p>
               </div>
             }
             @if (p.repoUrl || p.demoUrl) {
               <div class="links">
                 @if (p.repoUrl) {
-                  <a class="btn" [href]="p.repoUrl" target="_blank" rel="noopener"><app-icon name="github" [size]="16" /> Code source</a>
+                  <a class="btn" [href]="p.repoUrl" target="_blank" rel="noopener"><app-icon name="github" [size]="16" /> {{ 'project.source' | t }}</a>
                 }
                 @if (p.demoUrl) {
-                  <a class="btn btn-primary" [href]="p.demoUrl" target="_blank" rel="noopener"><app-icon name="external" [size]="16" /> Démo</a>
+                  <a class="btn btn-primary" [href]="p.demoUrl" target="_blank" rel="noopener"><app-icon name="external" [size]="16" /> {{ 'projects.demo' | t }}</a>
                 }
               </div>
             }
@@ -90,8 +92,8 @@ import { SiteHeader } from '../site-header';
       } @else if (notFound()) {
         <div class="state-404">
           <p class="mono gradient-text big">404</p>
-          <h1>Ce projet n'existe pas ou n'est plus publié.</h1>
-          <a class="btn btn-primary" routerLink="/" fragment="projects">Voir tous les projets</a>
+          <h1>{{ 'project.notFound' | t }}</h1>
+          <a class="btn btn-primary" routerLink="/" fragment="projects">{{ 'project.back' | t }}</a>
         </div>
       } @else {
         <div class="skel" aria-busy="true" aria-label="Chargement du projet">
@@ -121,6 +123,8 @@ import { SiteHeader } from '../site-header';
     .side h3 { font-size: 15px; }
     .confidential { display: flex; gap: 10px; padding: 12px; border-radius: var(--radius); background: var(--warning-soft); color: var(--warning); font-size: 14px; }
     .links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .preview-banner { position: sticky; top: var(--header-h); z-index: 30; padding: 8px 16px; text-align: center; font-size: 13px;
+      font-weight: 600; background: var(--warning-soft); color: var(--warning); border-bottom: 1px solid var(--warning); }
     .skel { display: flex; flex-direction: column; gap: 16px; margin-top: 28px; }
     .skel .layout { margin-top: 24px; }
     .state-404 { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 80px 0; }
@@ -139,9 +143,10 @@ import { SiteHeader } from '../site-header';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectDetail {
-  private readonly api = inject(PublicApiService);
   private readonly seo = inject(SeoService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly i18n = inject(I18nService);
+  protected readonly api = inject(PublicApiService);
   readonly slug = input.required<string>();
 
   protected readonly project = signal<Project | null>(null);
@@ -150,15 +155,16 @@ export class ProjectDetail {
   protected readonly ownerName = signal('');
 
   constructor() {
-    this.api.portfolio().subscribe((d) => {
+    effect(() => this.api.portfolio(this.i18n.lang()).subscribe((d) => {
       this.avatarUrl.set(d.profile.avatarUrl);
       this.ownerName.set(d.profile.fullName);
-    });
+    }));
     effect(() => {
       const slug = this.slug();
+      const lang = this.i18n.lang();
       this.project.set(null);
       this.notFound.set(false);
-      this.api.project(slug).subscribe({
+      this.api.project(slug, lang).subscribe({
         next: (p) => {
           this.project.set(p);
           this.seo.update({

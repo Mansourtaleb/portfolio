@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 
 import { Portfolio } from '../core/models';
 import { PublicApiService } from '../core/public-api.service';
+import { I18nService, TranslatePipe } from '../core/i18n';
 import { Avatar } from '../shared/avatar';
 import { Icon } from '../shared/icon';
 
@@ -13,12 +14,12 @@ import { Icon } from '../shared/icon';
  */
 @Component({
   selector: 'app-cv-page',
-  imports: [RouterLink, Icon, Avatar],
+  imports: [RouterLink, Icon, Avatar, TranslatePipe],
   template: `
     <div class="toolbar no-print">
-      <a routerLink="/" class="btn btn-ghost btn-sm"><app-icon name="arrow-left" [size]="15" /> Retour au portfolio</a>
-      <span class="text-sm text-faint">CV généré automatiquement depuis le contenu du site</span>
-      <button class="btn btn-primary btn-sm" type="button" (click)="print()"><app-icon name="download" [size]="15" /> Imprimer / PDF</button>
+      <a routerLink="/" class="btn btn-ghost btn-sm"><app-icon name="arrow-left" [size]="15" /> {{ 'cv.back' | t }}</a>
+      <span class="text-sm text-faint">{{ 'cv.generated' | t }}</span>
+      <button class="btn btn-primary btn-sm" type="button" (click)="print()"><app-icon name="download" [size]="15" /> {{ 'cv.print' | t }}</button>
     </div>
 
     @if (data(); as d) {
@@ -39,12 +40,12 @@ import { Icon } from '../shared/icon';
         </header>
 
         @if (d.profile.summary) {
-          <section><h2>Profil</h2><p>{{ d.profile.summary }}</p></section>
+          <section><h2>{{ 'cv.profile' | t }}</h2><p>{{ d.profile.summary }}</p></section>
         }
 
         @if (d.skills.length) {
           <section>
-            <h2>Compétences</h2>
+            <h2>{{ 'cv.skills' | t }}</h2>
             <table class="skills">
               @for (g of d.skills; track g.id) {
                 <tr><th>{{ g.name }}</th><td>{{ g.items.join(' · ') }}</td></tr>
@@ -55,7 +56,7 @@ import { Icon } from '../shared/icon';
 
         @if (d.experiences.length) {
           <section>
-            <h2>Expérience professionnelle</h2>
+            <h2>{{ 'cv.experience' | t }}</h2>
             @for (e of d.experiences; track e.id) {
               <div class="entry">
                 <div class="row">
@@ -72,7 +73,7 @@ import { Icon } from '../shared/icon';
 
         @if (d.projects.length) {
           <section>
-            <h2>Projets</h2>
+            <h2>{{ 'cv.projects' | t }}</h2>
             <ul class="projects">
               @for (p of d.projects; track p.id) {
                 <li><strong>{{ p.title }}</strong>@if (p.context) { <span class="muted"> ({{ p.context }})</span> } — {{ p.tagline || p.summary }}
@@ -86,22 +87,22 @@ import { Icon } from '../shared/icon';
         <div class="cols">
           @if (d.education.length) {
             <section>
-              <h2>Formation</h2>
+              <h2>{{ 'cv.education' | t }}</h2>
               @for (e of d.education; track e.id) {
                 <div class="entry">
                   <div class="row"><strong>{{ e.degree }}</strong><span class="date">{{ e.period }}</span></div>
-                  <p class="muted">{{ e.school }}@if (e.field) { · {{ e.field }}}@if (e.mention) { · Mention {{ e.mention }}}</p>
+                  <p class="muted">{{ e.school }}@if (e.field) { · {{ e.field }}}@if (e.mention) { · {{ 'education.mention' | t }} {{ e.mention }}}</p>
                 </div>
               }
             </section>
           }
           <section>
             @if (d.certifications.length) {
-              <h2>Certifications</h2>
+              <h2>{{ 'cv.certifications' | t }}</h2>
               @for (c of d.certifications; track c.id) { <p><strong>{{ c.issuer }}</strong> — {{ c.name }}</p> }
             }
             @if (d.languages.length) {
-              <h2 class="mt">Langues</h2>
+              <h2 class="mt">{{ 'cv.languages' | t }}</h2>
               <p>@for (l of d.languages; track l.id; let last = $last) {{{ l.name }} ({{ l.level }})@if (!last) { · }}</p>
             }
           </section>
@@ -154,10 +155,12 @@ export class CvPage {
 
   constructor() {
     const title = inject(Title);
-    inject(PublicApiService).portfolio().subscribe((d) => {
+    const api = inject(PublicApiService);
+    const i18n = inject(I18nService);
+    effect(() => api.portfolio(i18n.lang()).subscribe((d) => {
       this.data.set(d);
       title.setTitle(`CV — ${d.profile.fullName}`);
-    });
+    }));
   }
 
   protected print(): void {

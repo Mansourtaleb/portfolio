@@ -9,6 +9,8 @@ import { ToastService } from '../../shared/toast';
 import { HasUnsavedChanges, UNSAVED_MESSAGE } from '../../shared/unsaved-changes';
 import { DynamicForm } from './dynamic-form';
 import { ProjectGallery } from './project-gallery';
+import { TRANSLATABLE, TranslationPanel } from './translation-panel';
+import { PublicationState } from '../publication.service';
 import { sectionByKey } from './sections';
 
 type Item = { id: number; visible: boolean; sortOrder: number } & Record<string, any>;
@@ -16,7 +18,7 @@ type Item = { id: number; visible: boolean; sortOrder: number } & Record<string,
 /** Écran CRUD générique : liste, création, édition, suppression, ordre (glisser-déposer) et publication. */
 @Component({
   selector: 'app-section-editor',
-  imports: [Icon, DynamicForm, CdkDropList, CdkDrag, CdkDragHandle, ProjectGallery],
+  imports: [Icon, DynamicForm, CdkDropList, CdkDrag, CdkDragHandle, ProjectGallery, TranslationPanel],
   template: `
     <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
       <div>
@@ -31,10 +33,23 @@ type Item = { id: number; visible: boolean; sortOrder: number } & Record<string,
     @if (editing() !== undefined) {
       <section class="card mb-6 editor">
         <h2 class="font-semibold mb-4">{{ editing() ? 'Modifier' : 'Ajouter' }} {{ def().singular }}</h2>
-        <app-dynamic-form [fields]="def().fields" [value]="editing() ?? null" [saving]="saving()" [errors]="errors()"
-          (save)="save($event)" (dirtyChange)="dirty.set($event)">
-          <button class="btn btn-ghost" type="button" (click)="cancel()">Annuler</button>
-        </app-dynamic-form>
+        @if (editing() && translatable()) {
+          <div class="lang-tabs" role="tablist" aria-label="Langue du contenu">
+            <button type="button" role="tab" [class.active]="tab() === 'fr'" [attr.aria-selected]="tab() === 'fr'" (click)="switchTab('fr')">Français</button>
+            <button type="button" role="tab" [class.active]="tab() === 'en'" [attr.aria-selected]="tab() === 'en'" (click)="switchTab('en')">English</button>
+          </div>
+        }
+        @if (tab() === 'en' && editing(); as item) {
+          <app-translation-panel [entity]="def().key" [entityId]="item.id" [fields]="def().fields" [french]="item"
+            (dirtyChange)="dirty.set($event)">
+            <button class="btn btn-ghost" type="button" (click)="cancel()">Fermer</button>
+          </app-translation-panel>
+        } @else {
+          <app-dynamic-form [fields]="def().fields" [value]="editing() ?? null" [saving]="saving()" [errors]="errors()"
+            (save)="save($event)" (dirtyChange)="dirty.set($event)">
+            <button class="btn btn-ghost" type="button" (click)="cancel()">Annuler</button>
+          </app-dynamic-form>
+        }
       </section>
       @if (def().key === 'projects') {
         @if (editing(); as project) {
@@ -99,6 +114,9 @@ type Item = { id: number; visible: boolean; sortOrder: number } & Record<string,
     .cdk-drag-placeholder { opacity: 0.25; }
     .cdk-drop-list-dragging .row:not(.cdk-drag-placeholder) { transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1); }
     .editor { scroll-margin-top: 80px; }
+    .lang-tabs { display: inline-flex; padding: 3px; gap: 2px; margin-bottom: 16px; border-radius: 10px; background: var(--bg-soft); border: 1px solid var(--border); }
+    .lang-tabs button { border: 0; background: transparent; color: var(--text-muted); font: 500 13px var(--font); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+    .lang-tabs button.active { background: var(--accent-strong); color: #fff; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -108,6 +126,20 @@ export class SectionEditor implements HasUnsavedChanges {
   /** Clé de section, fournie par les données de la route. */
   readonly section = input.required<string>();
   protected readonly def = computed(() => sectionByKey(this.section()));
+  protected readonly translatable = computed(() => !!TRANSLATABLE[this.def().key]);
+  private readonly publication = inject(PublicationState);
+
+  /** Onglet de langue du formulaire (le français est la langue de référence). */
+  protected readonly tab = signal<'fr' | 'en'>('fr');
+
+  protected switchTab(tab: 'fr' | 'en'): void {
+    if (tab !== this.tab() && this.dirty() && !confirm(UNSAVED_MESSAGE)) {
+      return;
+    }
+    this.dirty.set(false);
+    this.tab.set(tab);
+  }
+
 
   protected readonly items = signal<Item[]>([]);
   protected readonly loaded = signal(false);
@@ -172,7 +204,7 @@ export class SectionEditor implements HasUnsavedChanges {
       next: () => {
         this.saving.set(false);
         this.closeEditor();
-        this.toast.success(current ? 'Modifications enregistrées.' : 'Élément ajouté.');
+        this.toast.success(current ? 'Modifications enregistrées (à publier).' : 'Élément ajouté (à publier).');
         this.load();
       },
       error: (e: HttpErrorResponse) => {
@@ -232,6 +264,7 @@ export class SectionEditor implements HasUnsavedChanges {
     }
     this.errors.set({});
     this.dirty.set(false);
+    this.tab.set('fr');
     this.editing.set(item);
     setTimeout(() => document.querySelector('.editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
@@ -260,6 +293,7 @@ export class SectionEditor implements HasUnsavedChanges {
         this.items.set(items);
         this.loaded.set(true);
         this.busy.set(false);
+        this.publication.refresh();
       },
       error: () => {
         this.loaded.set(true);

@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { ChatSource } from '../../core/models';
+import { TranslatePipe } from '../../core/i18n';
 import { Avatar } from '../../shared/avatar';
 import { Icon } from '../../shared/icon';
 import { RichTextPipe } from '../../shared/rich-text.pipe';
@@ -33,7 +34,7 @@ interface ChatMessage {
  */
 @Component({
   selector: 'app-assistant-widget',
-  imports: [FormsModule, RouterLink, Icon, RichTextPipe, Avatar],
+  imports: [FormsModule, RouterLink, Icon, RichTextPipe, Avatar, TranslatePipe],
   templateUrl: './assistant-widget.html',
   styleUrl: './assistant-widget.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

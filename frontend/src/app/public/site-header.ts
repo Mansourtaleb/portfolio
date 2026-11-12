@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { ThemeService } from '../core/theme.service';
 import { CommandPaletteService } from './command-palette';
+import { I18nService, TranslatePipe } from '../core/i18n';
 import { Avatar } from '../shared/avatar';
 import { Icon } from '../shared/icon';
 
@@ -14,7 +15,7 @@ export interface NavItem {
 /** En-tête de la vitrine : avatar, navigation par ancres avec section active, progression, thème. */
 @Component({
   selector: 'app-site-header',
-  imports: [RouterLink, Icon, Avatar],
+  imports: [RouterLink, Icon, Avatar, TranslatePipe],
   template: `
     <header class="site-header" [class.scrolled]="progress() > 0.01">
       <div class="progress" [style.transform]="'scaleX(' + progress() + ')'" aria-hidden="true"></div>
@@ -30,16 +31,18 @@ export interface NavItem {
           }
         </nav>
         <div class="actions">
-          <button class="search-btn" type="button" (click)="palette.open.set(true)" aria-label="Rechercher (Ctrl+K)">
-            <app-icon name="search" [size]="15" /><span class="label">Rechercher</span><kbd>{{ shortcut }}</kbd>
+          <button class="search-btn" type="button" (click)="palette.open.set(true)" [attr.aria-label]="'header.searchAria' | t">
+            <app-icon name="search" [size]="15" /><span class="label">{{ 'header.search' | t }}</span><kbd>{{ shortcut }}</kbd>
           </button>
+          <button class="btn btn-ghost lang-btn mono" type="button" (click)="i18n.toggle()" [attr.aria-label]="'header.lang' | t"
+            [title]="'header.lang' | t">{{ i18n.lang() === 'fr' ? 'EN' : 'FR' }}</button>
           <button class="btn btn-ghost btn-icon" type="button" (click)="theme.toggle()"
-            [attr.aria-label]="theme.theme() === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'">
+            [attr.aria-label]="(theme.theme() === 'dark' ? 'header.themeLight' : 'header.themeDark') | t">
             <app-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18" />
           </button>
           @if (items().length) {
             <button class="btn btn-ghost btn-icon menu-toggle" type="button" (click)="menuOpen.set(!menuOpen())"
-              [attr.aria-expanded]="menuOpen()" aria-label="Menu">
+              [attr.aria-expanded]="menuOpen()" [attr.aria-label]="'header.menu' | t">
               <app-icon [name]="menuOpen() ? 'x' : 'menu'" [size]="18" />
             </button>
           }
@@ -73,6 +76,7 @@ export interface NavItem {
     .search-btn kbd { font: 500 11px var(--mono); padding: 1px 5px; border-radius: 5px; border: 1px solid var(--border-strong); }
     @media (max-width: 1000px) { .search-btn .label, .search-btn kbd { display: none; } .search-btn { padding: 0 9px; } }
     .menu-toggle { display: none; }
+    .lang-btn { height: 34px; padding: 0 9px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
     @media (max-width: 760px) {
       .nav { display: none; position: absolute; top: var(--header-h); left: 0; right: 0; flex-direction: column; border-radius: 0;
         padding: 12px 20px 16px; background: var(--bg-solid); border-bottom: 1px solid var(--border); }
@@ -87,6 +91,7 @@ export interface NavItem {
 export class SiteHeader {
   protected readonly theme = inject(ThemeService);
   protected readonly palette = inject(CommandPaletteService);
+  protected readonly i18n = inject(I18nService);
   protected readonly shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
   readonly items = input<NavItem[]>([]);
   readonly avatarUrl = input<string | null>(null);

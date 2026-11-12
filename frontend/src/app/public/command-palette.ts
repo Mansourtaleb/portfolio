@@ -16,8 +16,8 @@ import { Router } from '@angular/router';
 import { Portfolio } from '../core/models';
 import { PublicApiService } from '../core/public-api.service';
 import { ThemeService } from '../core/theme.service';
+import { I18nService, I18nKey, TranslatePipe } from '../core/i18n';
 import { Icon } from '../shared/icon';
-import { SECTION_LABELS } from './home/home';
 
 interface Command {
   id: string;
@@ -44,7 +44,7 @@ const normalize = (s: string) =>
  */
 @Component({
   selector: 'app-command-palette',
-  imports: [Icon],
+  imports: [Icon, TranslatePipe],
   template: `
     @if (service.open()) {
       <div class="backdrop" (click)="close()">
@@ -52,7 +52,7 @@ const normalize = (s: string) =>
           <div class="search">
             <app-icon name="search" [size]="18" />
             <input #field type="text" [value]="query()" (input)="query.set(field.value); active.set(0)"
-              (keydown)="onKey($event)" placeholder="Rechercher un projet, une compétence, une section…"
+              (keydown)="onKey($event)" [placeholder]="'palette.placeholder' | t"
               role="combobox" aria-expanded="true" aria-controls="palette-list"
               [attr.aria-activedescendant]="results()[active()] ? 'cmd-' + results()[active()].id : null" />
             <kbd>Échap</kbd>
@@ -60,7 +60,7 @@ const normalize = (s: string) =>
           <ul id="palette-list" role="listbox" class="list">
             @for (cmd of results(); track cmd.id; let i = $index) {
               @if (i === 0 || results()[i - 1].group !== cmd.group) {
-                <li class="group" role="presentation">{{ cmd.group }}</li>
+                <li class="group" role="presentation">{{ groupLabel(cmd.group) }}</li>
               }
               <li [id]="'cmd-' + cmd.id" role="option" class="item" [class.active]="i === active()" [attr.aria-selected]="i === active()"
                 (mousemove)="active.set(i)" (click)="execute(cmd)">
@@ -69,10 +69,10 @@ const normalize = (s: string) =>
                 @if (cmd.hint) { <span class="hint">{{ cmd.hint }}</span> }
               </li>
             } @empty {
-              <li class="empty">Aucun résultat pour « {{ query() }} »</li>
+              <li class="empty">{{ 'palette.none' | t }} « {{ query() }} »</li>
             }
           </ul>
-          <div class="footer"><span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span><span><kbd>Entrée</kbd> ouvrir</span></div>
+          <div class="footer"><span><kbd>↑</kbd><kbd>↓</kbd> {{ 'palette.navigate' | t }}</span><span><kbd>↵</kbd> {{ 'palette.open' | t }}</span></div>
         </div>
       </div>
     }
@@ -105,6 +105,7 @@ export class CommandPalette {
   protected readonly service = inject(CommandPaletteService);
   private readonly router = inject(Router);
   private readonly theme = inject(ThemeService);
+  private readonly i18n = inject(I18nService);
   private readonly api = inject(PublicApiService);
   private readonly field = viewChild<ElementRef<HTMLInputElement>>('field');
   private readonly data = signal<Portfolio | null>(null);
@@ -119,7 +120,7 @@ export class CommandPalette {
     }
     const go = (fragment: string) => () => this.router.navigate(['/'], { fragment });
     const list: Command[] = d.settings.sections.map((key) => ({
-      id: `section-${key}`, group: 'Sections', label: SECTION_LABELS[key], icon: 'arrow-right',
+      id: `section-${key}`, group: 'Sections', label: this.i18n.t(`nav.${key}` as I18nKey), icon: 'arrow-right',
       keywords: key, run: go(key),
     }));
     for (const p of d.projects) {
@@ -143,13 +144,14 @@ export class CommandPalette {
       }
     }
     if (d.profile.cvUrl) {
-      list.push({ id: 'cv', group: 'Actions', label: 'Télécharger le CV', icon: 'download', keywords: 'pdf resume',
+      list.push({ id: 'cv', group: 'Actions', label: this.i18n.t('hero.cv'), icon: 'download', keywords: 'pdf resume',
         run: () => window.open(d.profile.cvUrl!, '_blank', 'noopener') });
     }
     list.push(
-      { id: 'cv-page', group: 'Actions', label: 'Voir le CV imprimable', icon: 'file-code', keywords: 'imprimer print pdf', run: () => this.router.navigate(['/cv']) },
-      { id: 'contact', group: 'Actions', label: 'Me contacter', icon: 'mail', keywords: 'email message', run: go('contact') },
-      { id: 'theme', group: 'Actions', label: 'Changer de thème (clair / sombre)', icon: 'sun', keywords: 'dark light mode', run: () => this.theme.toggle() },
+      { id: 'cv-page', group: 'Actions', label: this.i18n.t('palette.cvPage'), icon: 'file-code', keywords: 'imprimer print pdf', run: () => this.router.navigate(['/cv']) },
+      { id: 'contact', group: 'Actions', label: this.i18n.t('hero.contact'), icon: 'mail', keywords: 'email message', run: go('contact') },
+      { id: 'lang', group: 'Actions', label: this.i18n.t('palette.lang'), icon: 'language', keywords: 'english francais langue', run: () => this.i18n.toggle() },
+      { id: 'theme', group: 'Actions', label: this.i18n.t('palette.theme'), icon: 'sun', keywords: 'dark light mode', run: () => this.theme.toggle() },
     );
     return list;
   });
@@ -208,8 +210,8 @@ export class CommandPalette {
     this.opener = document.activeElement as HTMLElement | null;
     this.query.set('');
     this.active.set(0);
-    if (!this.data()) {
-      this.api.portfolio().subscribe((d) => this.data.set(d));
+    if (!this.data() || this.data()!.lang !== this.i18n.lang()) {
+      this.api.portfolio(this.i18n.lang()).subscribe((d) => this.data.set(d));
     }
     setTimeout(() => this.field()?.nativeElement.focus());
   }
@@ -236,6 +238,11 @@ export class CommandPalette {
     } else if (event.key === 'Escape') {
       this.close();
     }
+  }
+
+  protected groupLabel(group: string): string {
+    const keys: Record<string, I18nKey> = { Sections: 'palette.sections', Projets: 'palette.projects', 'Expériences': 'palette.experiences', 'Compétences': 'palette.skills', Actions: 'palette.actions' };
+    return keys[group] ? this.i18n.t(keys[group]) : group;
   }
 
   protected execute(cmd: Command): void {

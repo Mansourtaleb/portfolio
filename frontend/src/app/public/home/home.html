@@ -2,6 +2,7 @@
   [name]="data()?.profile?.fullName ?? ''" />
 
 @if (data(); as d) {
+  @if (api.preview) { <div class="preview-banner">{{ 'preview.banner' | t }}</div> }
   <main id="main">
     <!-- ================= Héros ================= -->
     <section class="hero">
@@ -17,15 +18,15 @@
           }
           <div class="hero-actions">
             @if (sections().includes('projects')) {
-              <a class="btn btn-primary" routerLink="/" fragment="projects">Voir les projets <app-icon name="arrow-right" [size]="16" /></a>
+              <a class="btn btn-primary" routerLink="/" fragment="projects">{{ 'hero.projects' | t }} <app-icon name="arrow-right" [size]="16" /></a>
             }
             @if (d.profile.cvUrl) {
-              <a class="btn" [href]="d.profile.cvUrl" target="_blank" rel="noopener"><app-icon name="download" [size]="16" /> Télécharger le CV</a>
+              <a class="btn" [href]="d.profile.cvUrl" target="_blank" rel="noopener"><app-icon name="download" [size]="16" /> {{ 'hero.cv' | t }}</a>
             } @else {
-              <a class="btn" routerLink="/cv"><app-icon name="download" [size]="16" /> Voir le CV</a>
+              <a class="btn" routerLink="/cv"><app-icon name="download" [size]="16" /> {{ 'hero.cvPage' | t }}</a>
             }
             @if (sections().includes('contact')) {
-              <a class="btn btn-ghost" routerLink="/" fragment="contact">Me contacter</a>
+              <a class="btn btn-ghost" routerLink="/" fragment="contact">{{ 'hero.contact' | t }}</a>
             }
           </div>
           <div class="socials">
@@ -66,8 +67,8 @@
         @case ('about') {
           <section id="about" class="section">
             <div class="container">
-              <p class="eyebrow mono">01 · {{ labels.about }}</p>
-              <h2>Qui suis-je ?</h2>
+              <p class="eyebrow mono">01 · {{ 'nav.about' | t }}</p>
+              <h2>{{ 'about.title' | t }}</h2>
               <div class="about-grid">
                 <p class="lead">{{ d.profile.summary }}</p>
                 <div class="facts card">
@@ -99,16 +100,16 @@
         @case ('skills') {
           <section id="skills" class="section">
             <div class="container">
-              <p class="eyebrow mono">02 · {{ labels.skills }}</p>
-              <h2>Ce que je maîtrise</h2>
+              <p class="eyebrow mono">02 · {{ 'nav.skills' | t }}</p>
+              <h2>{{ 'skills.title' | t }}</h2>
               <div class="bento">
                 <article class="card bento-stats" appReveal>
-                  <p class="eyebrow mono">En chiffres</p>
+                  <p class="eyebrow mono">{{ 'skills.stats' | t }}</p>
                   <div class="stats">
-                    <div><strong class="mono gradient-text">{{ d.experiences.length }}</strong><span>expériences</span></div>
-                    <div><strong class="mono gradient-text">{{ d.projects.length }}</strong><span>projets publiés</span></div>
-                    <div><strong class="mono gradient-text">{{ skillCount() }}</strong><span>technologies</span></div>
-                    <div><strong class="mono gradient-text">{{ d.certifications.length }}</strong><span>certifications</span></div>
+                    <div><strong class="mono gradient-text">{{ d.experiences.length }}</strong><span>{{ 'skills.experiences' | t }}</span></div>
+                    <div><strong class="mono gradient-text">{{ d.projects.length }}</strong><span>{{ 'skills.projects' | t }}</span></div>
+                    <div><strong class="mono gradient-text">{{ skillCount() }}</strong><span>{{ 'skills.technologies' | t }}</span></div>
+                    <div><strong class="mono gradient-text">{{ d.certifications.length }}</strong><span>{{ 'skills.certifications' | t }}</span></div>
                   </div>
                 </article>
                 @for (group of d.skills; track group.id; let i = $index) {
@@ -134,8 +135,8 @@
         @case ('experience') {
           <section id="experience" class="section">
             <div class="container">
-              <p class="eyebrow mono">03 · {{ labels.experience }}</p>
-              <h2>Expériences</h2>
+              <p class="eyebrow mono">03 · {{ 'nav.experience' | t }}</p>
+              <h2>{{ 'experience.title' | t }}</h2>
               <ol class="timeline">
                 @for (exp of d.experiences; track exp.id; let i = $index) {
                   <li class="timeline-item" [class.open]="isOpen(i)" [appReveal]="i * 80">
@@ -189,11 +190,11 @@
         @case ('projects') {
           <section id="projects" class="section">
             <div class="container">
-              <p class="eyebrow mono">04 · {{ labels.projects }}</p>
-              <h2>Projets</h2>
+              <p class="eyebrow mono">04 · {{ 'nav.projects' | t }}</p>
+              <h2>{{ 'projects.title' | t }}</h2>
               @if (techs().length > 1) {
-                <div class="filters" role="toolbar" aria-label="Filtrer par technologie">
-                  <button type="button" class="filter" [class.active]="!techFilter()" (click)="techFilter.set(null)">Tous</button>
+                <div class="filters" role="toolbar" [attr.aria-label]="'projects.filterAria' | t">
+                  <button type="button" class="filter" [class.active]="!techFilter()" (click)="techFilter.set(null)">{{ 'projects.all' | t }}</button>
                   @for (t of techs(); track t) {
                     <button type="button" class="filter mono" [class.active]="techFilter() === t" (click)="techFilter.set(t)">{{ t }}</button>
                   }
@@ -213,10 +214,10 @@
                           <span class="chip chip-accent">{{ p.context }}</span>
                         }
                         @if (p.status === 'IN_PROGRESS') {
-                          <span class="chip chip-warning">En cours</span>
+                          <span class="chip chip-warning">{{ 'projects.inProgress' | t }}</span>
                         }
                         @if (p.confidential) {
-                          <span class="chip"><app-icon name="lock" [size]="13" /> Confidentiel</span>
+                          <span class="chip"><app-icon name="lock" [size]="13" /> {{ 'projects.confidential' | t }}</span>
                         }
                       </div>
                       @if (p.period) {
@@ -236,17 +237,17 @@
                       }
                     </div>
                     <div class="project-links">
-                      <a class="btn btn-sm" [routerLink]="['/projects', p.slug]">Voir le détail <app-icon name="arrow-right" [size]="14" /></a>
+                      <a class="btn btn-sm" [routerLink]="['/projects', p.slug]">{{ 'projects.details' | t }} <app-icon name="arrow-right" [size]="14" /></a>
                       @if (p.repoUrl) {
-                        <a class="btn btn-sm btn-ghost" [href]="p.repoUrl" target="_blank" rel="noopener"><app-icon name="github" [size]="16" /> Code</a>
+                        <a class="btn btn-sm btn-ghost" [href]="p.repoUrl" target="_blank" rel="noopener"><app-icon name="github" [size]="16" /> {{ 'projects.code' | t }}</a>
                       }
                       @if (p.demoUrl) {
-                        <a class="btn btn-sm btn-ghost" [href]="p.demoUrl" target="_blank" rel="noopener"><app-icon name="external" [size]="16" /> Démo</a>
+                        <a class="btn btn-sm btn-ghost" [href]="p.demoUrl" target="_blank" rel="noopener"><app-icon name="external" [size]="16" /> {{ 'projects.demo' | t }}</a>
                       }
                     </div>
                   </article>
                 } @empty {
-                  <p class="muted">Aucun projet avec cette technologie.</p>
+                  <p class="muted">{{ 'projects.none' | t }}</p>
                 }
               </div>
             </div>
@@ -257,8 +258,8 @@
         @case ('education') {
           <section id="education" class="section">
             <div class="container">
-              <p class="eyebrow mono">05 · {{ labels.education }}</p>
-              <h2>Formation &amp; certifications</h2>
+              <p class="eyebrow mono">05 · {{ 'nav.education' | t }}</p>
+              <h2>{{ 'education.title' | t }}</h2>
               <div class="edu-grid">
                 <div class="edu-list">
                   @for (e of d.education; track e.id) {
@@ -272,7 +273,7 @@
                           @if (e.period) {<span class="mono"> · {{ e.period }}</span>}
                         </p>
                         @if (e.mention) {
-                          <span class="chip chip-success">Mention {{ e.mention }}</span>
+                          <span class="chip chip-success">{{ 'education.mention' | t }} {{ e.mention }}</span>
                         }
                         @if (e.description) {
                           <p class="muted small edu-desc">{{ e.description }}</p>
@@ -283,21 +284,21 @@
                 </div>
                 <aside class="card side">
                   @if (d.certifications.length) {
-                    <h3><app-icon name="award" [size]="18" /> Certifications</h3>
+                    <h3><app-icon name="award" [size]="18" /> {{ 'education.certifications' | t }}</h3>
                     <ul class="plain">
                       @for (c of d.certifications; track c.id) {
                         <li>
                           <strong>{{ c.name }}</strong>
                           <span class="muted"> — {{ c.issuer }}@if (c.issuedOn) {, {{ c.issuedOn }}}</span>
                           @if (c.credentialUrl) {
-                            <a [href]="c.credentialUrl" target="_blank" rel="noopener" class="small"> Vérifier <app-icon name="external" [size]="12" /></a>
+                            <a [href]="c.credentialUrl" target="_blank" rel="noopener" class="small"> {{ 'education.verify' | t }} <app-icon name="external" [size]="12" /></a>
                           }
                         </li>
                       }
                     </ul>
                   }
                   @if (d.languages.length) {
-                    <h3><app-icon name="language" [size]="18" /> Langues</h3>
+                    <h3><app-icon name="language" [size]="18" /> {{ 'education.languages' | t }}</h3>
                     <ul class="plain">
                       @for (l of d.languages; track l.id) {
                         <li><strong>{{ l.name }}</strong> <span class="muted">— {{ l.level }}</span></li>
@@ -305,7 +306,7 @@
                     </ul>
                   }
                   @if (d.profile.extras.length) {
-                    <h3><app-icon name="sparkles" [size]="18" /> Divers</h3>
+                    <h3><app-icon name="sparkles" [size]="18" /> {{ 'education.misc' | t }}</h3>
                     <ul class="plain">
                       @for (x of d.profile.extras; track x) {
                         <li class="muted">{{ x }}</li>
@@ -322,11 +323,11 @@
         @case ('contact') {
           <section id="contact" class="section">
             <div class="container">
-              <p class="eyebrow mono">06 · {{ labels.contact }}</p>
-              <h2>Travaillons ensemble</h2>
+              <p class="eyebrow mono">06 · {{ 'nav.contact' | t }}</p>
+              <h2>{{ 'contact.title' | t }}</h2>
               <div class="contact-grid">
                 <div class="contact-info">
-                  <p class="lead">Un poste, un projet ou une question ? Écrivez-moi, je réponds rapidement.</p>
+                  <p class="lead">{{ 'contact.lead' | t }}</p>
                   @if (d.profile.email) {
                     <a class="contact-line" [href]="'mailto:' + d.profile.email"><app-icon name="mail" /> {{ d.profile.email }}</a>
                   }
@@ -343,26 +344,26 @@
                 @if (d.settings.contactFormEnabled) {
                   <form class="card" (ngSubmit)="sendContact()" #f="ngForm">
                     @if (contactSent()) {
-                      <p class="alert alert-success">Merci, votre message est bien envoyé !</p>
+                      <p class="alert alert-success">{{ 'contact.sent' | t }}</p>
                     } @else {
                       <div class="form-row">
                         <div class="field">
-                          <label for="c-name">Nom</label>
+                          <label for="c-name">{{ 'contact.name' | t }}</label>
                           <input id="c-name" class="input" name="name" [(ngModel)]="contact.name" required maxlength="120" autocomplete="name" />
                           @if (contactErrors()['name']) {<span class="error">{{ contactErrors()['name'] }}</span>}
                         </div>
                         <div class="field">
-                          <label for="c-email">E-mail</label>
+                          <label for="c-email">{{ 'contact.email' | t }}</label>
                           <input id="c-email" class="input" type="email" name="email" [(ngModel)]="contact.email" required maxlength="160" autocomplete="email" />
                           @if (contactErrors()['email']) {<span class="error">{{ contactErrors()['email'] }}</span>}
                         </div>
                       </div>
                       <div class="field">
-                        <label for="c-subject">Objet <span class="hint">(facultatif)</span></label>
+                        <label for="c-subject">{{ 'contact.subject' | t }} <span class="hint">{{ 'contact.optional' | t }}</span></label>
                         <input id="c-subject" class="input" name="subject" [(ngModel)]="contact.subject" maxlength="200" />
                       </div>
                       <div class="field">
-                        <label for="c-message">Message</label>
+                        <label for="c-message">{{ 'contact.message' | t }}</label>
                         <textarea id="c-message" class="textarea" name="message" rows="5" [(ngModel)]="contact.message" required minlength="10" maxlength="5000"></textarea>
                         @if (contactErrors()['message']) {<span class="error">{{ contactErrors()['message'] }}</span>}
                       </div>
@@ -371,7 +372,7 @@
                         <p class="alert alert-error">{{ contactError() }}</p>
                       }
                       <button class="btn btn-primary" type="submit" [disabled]="sending() || f.invalid">
-                        <app-icon name="send" [size]="16" /> {{ sending() ? 'Envoi…' : 'Envoyer' }}
+                        <app-icon name="send" [size]="16" /> {{ (sending() ? 'contact.sending' : 'contact.send') | t }}
                       </button>
                     }
                   </form>
@@ -397,7 +398,7 @@
   }
 } @else if (loadError()) {
   <div class="container state">
-    <p class="alert alert-error">Le contenu n'a pas pu être chargé. Vérifiez que l'API est démarrée.</p>
+    <p class="alert alert-error">{{ 'loadError' | t }}</p>
   </div>
 } @else {
   <!-- Squelette affiché pendant le chargement du contenu -->

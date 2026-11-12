@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -48,6 +49,7 @@ import com.taleb.portfolio.content.skill.SkillGroup;
 import com.taleb.portfolio.content.skill.SkillGroupDto;
 
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
 
 /** API publique de la vitrine : lecture seule, uniquement le contenu marqué visible. */
@@ -71,6 +73,7 @@ class PublicController {
 	private final AvatarService avatarService;
 	private final ProjectImageService imageService;
 	private final AnalyticsService analytics;
+	private final PublicationService publication;
 	private final RateLimiter contactLimiter = new RateLimiter(3, Duration.ofMinutes(10));
 
 	PublicController(ProfileService profileService, SiteSettingsService settingsService,
@@ -79,7 +82,9 @@ class PublicController {
 			SectionService<Certification, CertificationDto> certifications,
 			SectionService<SpokenLanguage, SpokenLanguageDto> languages, ProjectRepository projectRepository,
 			ContactService contactService, AssistantService assistantService, CvService cvService,
-			AvatarService avatarService, ProjectImageService imageService, AnalyticsService analytics) {
+			AvatarService avatarService, ProjectImageService imageService, AnalyticsService analytics,
+			PublicationService publication) {
+		this.publication = publication;
 		this.analytics = analytics;
 		this.imageService = imageService;
 		this.cvService = cvService;
@@ -97,27 +102,15 @@ class PublicController {
 		this.assistantService = assistantService;
 	}
 
+	/** Vitrine publiée, en français (par défaut) ou en anglais (?lang=en). */
 	@GetMapping("/portfolio")
-	ResponseEntity<PortfolioView> portfolio() {
-		SiteSettingsDto settings = settingsService.get();
-		PortfolioView view = new PortfolioView(
-				PublicProfile.from(profileService.get(), cvService.exists() ? CvService.PUBLIC_URL : null,
-						avatarService.publicUrl().orElse(null)),
-				PublicSettings.from(settings, assistantService.isAvailable()),
-				skills.findVisible(),
-				experiences.findVisible(),
-				projects.findVisible(),
-				education.findVisible(),
-				certifications.findVisible(),
-				languages.findVisible());
-		return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(view);
+	ResponseEntity<JsonNode> portfolio(@RequestParam(defaultValue = "fr") String lang) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(publication.published(lang));
 	}
 
 	@GetMapping("/projects/{slug}")
-	@Transactional(readOnly = true)
-	ProjectDto project(@PathVariable String slug) {
-		return projectRepository.findBySlugAndVisibleTrue(slug).map(pr -> ProjectDto.from(pr, imageService.refs(pr.getId())))
-				.orElseThrow(() -> new NotFoundException("Projet introuvable"));
+	JsonNode project(@PathVariable String slug, @RequestParam(defaultValue = "fr") String lang) {
+		return publication.publishedProject(slug, lang).orElseThrow(() -> new NotFoundException("Projet introuvable"));
 	}
 
 	@PostMapping("/contact")

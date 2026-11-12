@@ -117,6 +117,7 @@ export interface SpokenLanguage extends SectionItem {
 }
 
 export interface Portfolio {
+  lang?: 'fr' | 'en';
   profile: Profile;
   settings: PublicSettings;
   skills: SkillGroup[];
@@ -216,4 +217,9 @@ export interface AssistantExchangePage {
   page: number;
   size: number;
   totalItems: number;
+}
+
+export interface PublicationStatus {
+  publishedAt: string | null;
+  pendingChanges: boolean;
 }

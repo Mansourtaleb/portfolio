@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ApiProblem, Portfolio, SectionKey } from '../../core/models';
 import { PublicApiService } from '../../core/public-api.service';
 import { SeoService } from '../../core/seo.service';
+import { I18nKey, I18nService, Lang, TranslatePipe } from '../../core/i18n';
 import { ThemeService } from '../../core/theme.service';
 import { Avatar } from '../../shared/avatar';
 import { Icon } from '../../shared/icon';
@@ -24,13 +25,14 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, FormsModule, Icon, AssistantWidget, SiteHeader, RevealDirective, Avatar],
+  imports: [RouterLink, FormsModule, Icon, AssistantWidget, SiteHeader, RevealDirective, Avatar, TranslatePipe],
   templateUrl: './home.html',
   styleUrl: './home.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Home {
-  private readonly api = inject(PublicApiService);
+  protected readonly api = inject(PublicApiService);
+  private readonly i18n = inject(I18nService);
   private readonly theme = inject(ThemeService);
   private readonly seo = inject(SeoService);
 
@@ -40,7 +42,8 @@ export class Home {
 
   protected readonly sections = computed(() => this.data()?.settings.sections ?? []);
   protected readonly navItems = computed(() =>
-    this.sections().map((key) => ({ key, label: SECTION_LABELS[key] })),
+    // Dépend aussi de la langue (signal lu dans t()) : les libellés changent avec le sélecteur FR/EN.
+    this.sections().map((key) => ({ key, label: this.i18n.t(`nav.${key}` as I18nKey) })),
   );
   protected readonly firstName = computed(() => {
     const name = this.data()?.profile.fullName ?? '';
@@ -100,7 +103,12 @@ export class Home {
   protected readonly contactErrors = signal<Record<string, string>>({});
 
   constructor() {
-    this.api.portfolio().subscribe({
+    effect(() => this.load(this.i18n.lang()));
+  }
+
+  private load(lang: Lang): void {
+    this.loadError.set(false);
+    this.api.portfolio(lang).subscribe({
       next: (portfolio) => {
         this.data.set(portfolio);
         this.theme.useDefault(portfolio.settings.defaultTheme);
@@ -134,7 +142,7 @@ export class Home {
         this.sending.set(false);
         const problem = error.error as ApiProblem | null;
         this.contactErrors.set(problem?.errors ?? {});
-        this.contactError.set(problem?.detail ?? "Le message n'a pas pu être envoyé. Réessayez plus tard.");
+        this.contactError.set(problem?.detail ?? this.i18n.t('contact.error'));
       },
     });
   }

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, input, signal, viewChild } from '@angular/core';
 
 import { ProjectImage } from '../core/models';
+import { TranslatePipe } from '../core/i18n';
 import { Icon } from '../shared/icon';
 
 /**
@@ -9,13 +10,13 @@ import { Icon } from '../shared/icon';
  */
 @Component({
   selector: 'app-gallery',
-  imports: [Icon],
+  imports: [Icon, TranslatePipe],
   template: `
     @if (images().length) {
       <div class="stage">
         <button type="button" class="main" (click)="openViewer()" [attr.aria-label]="'Agrandir : ' + (current().caption ?? 'capture ' + (index() + 1))">
           <img [src]="current().url" [alt]="current().caption ?? 'Capture d’écran du projet'" />
-          <span class="zoom"><app-icon name="zoom-in" [size]="16" /> Agrandir</span>
+          <span class="zoom"><app-icon name="zoom-in" [size]="16" /> {{ 'gallery.zoom' | t }}</span>
         </button>
         @if (images().length > 1) {
           <button type="button" class="nav prev" (click)="go(-1)" aria-label="Image précédente"><app-icon name="arrow-left" [size]="18" /></button>

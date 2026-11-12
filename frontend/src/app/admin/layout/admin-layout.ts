@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth.service';
 import { ThemeService } from '../../core/theme.service';
 import { Icon } from '../../shared/icon';
 import { Toasts } from '../../shared/toast';
+import { PublicationState } from '../publication.service';
 import { SECTIONS } from '../section-editor/sections';
 
 interface NavLink {
@@ -51,6 +52,17 @@ interface NavLink {
           </button>
           <span class="text-sm text-muted hidden sm:inline">Connecté : <strong class="text-fg">{{ auth.username() }}</strong></span>
           <div class="ml-auto flex items-center gap-1">
+            @if (publication.status(); as st) {
+              @if (st.pendingChanges) {
+                <span class="pending mono" title="Le brouillon contient des modifications que les visiteurs ne voient pas encore">● brouillon non publié</span>
+                <button class="btn btn-sm btn-ghost" type="button" (click)="openPreview()"><app-icon name="eye" [size]="15" /> Aperçu</button>
+                <button class="btn btn-sm btn-primary" type="button" [disabled]="publication.publishing()" (click)="publication.publish()">
+                  <app-icon name="send" [size]="14" /> {{ publication.publishing() ? 'Publication…' : 'Publier' }}
+                </button>
+              } @else {
+                <span class="published mono" title="Les visiteurs voient la dernière version">✓ à jour</span>
+              }
+            }
             <a class="btn btn-sm btn-ghost" href="/" target="_blank" rel="noopener"><app-icon name="external" [size]="15" /> Voir le site</a>
             <button class="btn btn-ghost btn-icon" type="button" (click)="theme.toggle()" aria-label="Changer de thème">
               <app-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="17" />
@@ -73,6 +85,8 @@ interface NavLink {
       color: var(--text-muted); text-decoration: none; transition: background 0.15s ease, color 0.15s ease; }
     .nav-link:hover { background: var(--bg-soft); color: var(--text); text-decoration: none; }
     .nav-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .pending { font-size: 12px; color: var(--warning); margin-right: 4px; white-space: nowrap; }
+    .published { font-size: 12px; color: var(--success); margin-right: 4px; }
     .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; height: 60px;
       padding: 0 16px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 85%, transparent);
       backdrop-filter: blur(10px); }
@@ -89,6 +103,12 @@ export class AdminLayout {
   private readonly api = inject(AdminApiService);
   protected readonly menuOpen = signal(false);
   protected readonly unread = signal(0);
+  protected readonly publication = inject(PublicationState);
+
+  /** Aperçu du brouillon dans un nouvel onglet (la session admin y est recopiée). */
+  protected openPreview(): void {
+    window.open('/?preview=1', '_blank');
+  }
 
   protected readonly groups: { title: string; links: NavLink[] }[] = [
     {
@@ -124,11 +144,13 @@ export class AdminLayout {
 
   constructor() {
     this.refreshUnread();
+    this.publication.refresh();
     inject(Router)
       .events.pipe(filter((e) => e instanceof NavigationEnd))
       .subscribe(() => {
         this.menuOpen.set(false);
         this.refreshUnread();
+        this.publication.refresh();
       });
   }
 

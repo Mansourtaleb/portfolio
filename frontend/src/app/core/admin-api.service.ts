@@ -10,6 +10,7 @@ import {
   CvInfo,
   Profile,
   ProjectImage,
+  PublicationStatus,
   SearchHit,
   SiteSettings,
 } from './models';
@@ -79,6 +80,22 @@ export class AdminApiService {
 
   deleteProjectImage(projectId: number, imageId: number): Observable<void> {
     return this.http.delete<void>(`/api/admin/projects/${projectId}/images/${imageId}`);
+  }
+
+  publicationStatus(): Observable<PublicationStatus> {
+    return this.http.get<PublicationStatus>('/api/admin/publication');
+  }
+
+  publish(): Observable<PublicationStatus> {
+    return this.http.post<PublicationStatus>('/api/admin/publication/publish', null);
+  }
+
+  translations(entity: string, id: number): Observable<Record<string, unknown>> {
+    return this.http.get<Record<string, unknown>>('/api/admin/translations/' + entity + '/' + id);
+  }
+
+  saveTranslations(entity: string, id: number, values: Record<string, unknown>): Observable<Record<string, unknown>> {
+    return this.http.put<Record<string, unknown>>('/api/admin/translations/' + entity + '/' + id, values);
   }
 
   analytics(days: number): Observable<AnalyticsReport> {

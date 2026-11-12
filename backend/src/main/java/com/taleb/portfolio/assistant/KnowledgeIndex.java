@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.taleb.portfolio.common.ContentChangedEvent;
+import com.taleb.portfolio.common.PublishedEvent;
 
 /**
  * Index en mémoire des fiches de connaissance, reconstruit à chaque modification du contenu.
@@ -71,7 +71,7 @@ public class KnowledgeIndex {
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
 	@Async
-	void onContentChanged(ContentChangedEvent event) {
+	void onPublished(PublishedEvent event) {
 		rebuild();
 	}
 

@@ -10,6 +10,9 @@ import { Icon } from '../../shared/icon';
 import { ToastService } from '../../shared/toast';
 import { HasUnsavedChanges } from '../../shared/unsaved-changes';
 import { TagInput } from '../section-editor/tag-input';
+import { FieldDef } from '../section-editor/sections';
+import { TranslationPanel } from '../section-editor/translation-panel';
+import { PublicationState } from '../publication.service';
 
 const SECTION_HINTS: Record<SectionKey, string> = {
   about: 'Présentation, localisation, langues, qualités',
@@ -23,7 +26,7 @@ const SECTION_HINTS: Record<SectionKey, string> = {
 /** Ordre et visibilité des sections, thème par défaut, SEO, assistant et formulaire de contact. */
 @Component({
   selector: 'app-settings-editor',
-  imports: [FormsModule, Icon, CdkDropList, CdkDrag, CdkDragHandle, TagInput],
+  imports: [FormsModule, Icon, CdkDropList, CdkDrag, CdkDragHandle, TagInput, TranslationPanel],
   template: `
     <h1 class="text-2xl font-bold flex items-center gap-2 mb-1"><app-icon name="settings" [size]="22" /> Sections &amp; réglages</h1>
     <p class="text-muted text-sm mb-6">Organisation de la page d'accueil et options globales du site.</p>
@@ -87,6 +90,11 @@ const SECTION_HINTS: Record<SectionKey, string> = {
           </div>
         </section>
 
+        <section class="card lg:col-span-2">
+          <h2 class="font-semibold mb-1">English</h2>
+          <app-translation-panel entity="settings" [entityId]="1" [fields]="enFields" [french]="$any(st)" />
+        </section>
+
         <div class="lg:col-span-2 savebar">
           @if (dirty()) { <span class="mono text-xs text-warn mr-auto">● modifications non enregistrées</span> }
           <button class="btn btn-ghost" type="button" [disabled]="!dirty()" (click)="reset()">Annuler</button>
@@ -124,6 +132,13 @@ export class SettingsEditor implements HasUnsavedChanges {
   private readonly toast = inject(ToastService);
   protected readonly labels = SECTION_LABELS;
   protected readonly hints = SECTION_HINTS;
+  private readonly publication = inject(PublicationState);
+  protected readonly enFields: FieldDef[] = [
+    { key: 'siteTitle', label: 'Titre du site', type: 'text', wide: true },
+    { key: 'metaDescription', label: 'Description (SEO)', type: 'textarea', rows: 2, wide: true },
+    { key: 'assistantGreeting', label: "Message d'accueil de l'assistant", type: 'textarea', rows: 2, wide: true },
+    { key: 'assistantSuggestions', label: 'Questions suggérées', type: 'tags', wide: true },
+  ];
   protected readonly s = signal<SiteSettings | null>(null);
   protected readonly saving = signal(false);
   private readonly version = signal(0);
@@ -188,7 +203,8 @@ export class SettingsEditor implements HasUnsavedChanges {
       next: (s) => {
         this.saving.set(false);
         this.set(s);
-        this.toast.success('Réglages enregistrés : la vitrine est à jour.');
+        this.toast.success('Réglages enregistrés (à publier).');
+        this.publication.refresh();
       },
       error: (e: HttpErrorResponse) => {
         this.saving.set(false);

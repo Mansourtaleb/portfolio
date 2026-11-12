@@ -10,13 +10,21 @@ import { HasUnsavedChanges } from '../../shared/unsaved-changes';
 import { AvatarCropper } from './avatar-cropper';
 import { DynamicForm } from './dynamic-form';
 import { PROFILE_FIELDS } from './sections';
+import { TranslationPanel } from './translation-panel';
+import { PublicationState } from '../publication.service';
+import { UNSAVED_MESSAGE } from '../../shared/unsaved-changes';
 
 const MAX_SOURCE_BYTES = 15 * 1024 * 1024;
 
 /** Profil / hero (ligne unique), photo de profil et CV PDF. */
 @Component({
   selector: 'app-profile-editor',
-  imports: [DynamicForm, Icon, Avatar, AvatarCropper],
+  imports: [DynamicForm, Icon, Avatar, AvatarCropper, TranslationPanel],
+  styles: `
+    .lang-tabs { display: inline-flex; padding: 3px; gap: 2px; margin-bottom: 16px; border-radius: 10px; background: var(--bg-soft); border: 1px solid var(--border); }
+    .lang-tabs button { border: 0; background: transparent; color: var(--text-muted); font: 500 13px var(--font); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+    .lang-tabs button.active { background: var(--accent-strong); color: #fff; }
+  `,
   template: `
     <h1 class="text-2xl font-bold flex items-center gap-2 mb-1"><app-icon name="user" [size]="22" /> Profil, hero &amp; CV</h1>
     <p class="text-muted text-sm mb-6">Identité, photo, accroche du hero, coordonnées et CV téléchargeable.</p>
@@ -70,9 +78,19 @@ const MAX_SOURCE_BYTES = 15 * 1024 * 1024;
 
     <section class="card">
       <h2 class="font-semibold mb-4">Informations</h2>
+        @if (profile()) {
+          <div class="lang-tabs" role="tablist" aria-label="Langue du contenu">
+            <button type="button" role="tab" [class.active]="tab() === 'fr'" [attr.aria-selected]="tab() === 'fr'" (click)="switchTab('fr')">Français</button>
+            <button type="button" role="tab" [class.active]="tab() === 'en'" [attr.aria-selected]="tab() === 'en'" (click)="switchTab('en')">English</button>
+          </div>
+        }
       @if (profile(); as p) {
-        <app-dynamic-form #form [fields]="fields" [value]="p" [saving]="saving()" [errors]="errors()"
-          (save)="save($event)" (dirtyChange)="dirty.set($event)" />
+        @if (tab() === 'en') {
+          <app-translation-panel entity="profile" [entityId]="1" [fields]="fields" [french]="$any(p)" (dirtyChange)="dirty.set($event)" />
+        } @else {
+          <app-dynamic-form #form [fields]="fields" [value]="p" [saving]="saving()" [errors]="errors()"
+            (save)="save($event)" (dirtyChange)="dirty.set($event)" />
+        }
       } @else {
         <div class="space-y-3"><div class="skeleton h-10"></div><div class="skeleton h-10"></div><div class="skeleton h-24"></div></div>
       }
@@ -93,6 +111,18 @@ export class ProfileEditor implements HasUnsavedChanges {
   protected readonly saving = signal(false);
   protected readonly dirty = signal(false);
   protected readonly errors = signal<Record<string, string>>({});
+  private readonly publication = inject(PublicationState);
+
+  /** Onglet de langue du formulaire (le français est la langue de référence). */
+  protected readonly tab = signal<'fr' | 'en'>('fr');
+
+  protected switchTab(tab: 'fr' | 'en'): void {
+    if (tab !== this.tab() && this.dirty() && !confirm(UNSAVED_MESSAGE)) {
+      return;
+    }
+    this.dirty.set(false);
+    this.tab.set(tab);
+  }
 
   constructor() {
     this.api.profile().subscribe((p) => this.profile.set(p));
@@ -118,7 +148,8 @@ export class ProfileEditor implements HasUnsavedChanges {
       next: () => {
         this.saving.set(false);
         this.form()?.markSaved();
-        this.toast.success('Profil enregistré.');
+        this.toast.success('Profil enregistré (à publier).');
+        this.publication.refresh();
       },
       error: (e: HttpErrorResponse) => {
         this.saving.set(false);
