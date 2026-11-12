@@ -47,6 +47,20 @@ export class AdminApiService {
     return this.http.put<SiteSettings>('/api/admin/settings', settings);
   }
 
+  avatar(): Observable<{ url: string } | null> {
+    return this.http.get<{ url: string } | null>('/api/admin/avatar');
+  }
+
+  uploadAvatar(image: Blob): Observable<{ url: string }> {
+    const body = new FormData();
+    body.append('file', image, image.type === 'image/webp' ? 'avatar.webp' : 'avatar.png');
+    return this.http.post<{ url: string }>('/api/admin/avatar', body);
+  }
+
+  deleteAvatar(): Observable<void> {
+    return this.http.delete<void>('/api/admin/avatar');
+  }
+
   cvInfo(): Observable<CvInfo | null> {
     return this.http.get<CvInfo | null>('/api/admin/cv');
   }

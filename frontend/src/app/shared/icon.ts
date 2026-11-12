@@ -50,6 +50,10 @@ const PATHS: Record<string, string> = {
   search: '<circle cx="10" cy="10" r="7"/><path d="M21 21l-6-6"/>',
   check: '<path d="M5 12l5 5L20 7"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  grip: '<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>',
+  camera: '<path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2"/><circle cx="12" cy="13" r="3"/>',
+  'zoom-in': '<circle cx="10" cy="10" r="7"/><path d="M7 10h6M10 7v6M21 21l-6-6"/>',
+  'zoom-out': '<circle cx="10" cy="10" r="7"/><path d="M7 10h6M21 21l-6-6"/>',
 };
 
 @Component({

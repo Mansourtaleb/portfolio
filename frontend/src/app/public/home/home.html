@@ -1,4 +1,5 @@
-<app-site-header [items]="navItems()" />
+<app-site-header [items]="navItems()" [avatarUrl]="data()?.profile?.avatarUrl ?? null"
+  [name]="data()?.profile?.fullName ?? ''" />
 
 @if (data(); as d) {
   <main>
@@ -41,6 +42,9 @@
           </div>
         </div>
 
+        <div class="hero-visual">
+        <app-avatar class="hero-avatar" [src]="d.profile.avatarUrl" [name]="d.profile.fullName" [size]="168"
+          [halo]="true" [available]="!!d.profile.availability" />
         <div class="code-card mono" aria-hidden="true">
           <div class="code-head"><span></span><span></span><span></span><em>profil.ts</em></div>
           <pre><span class="k">const</span> <span class="v">profil</span> = &#123;
@@ -49,6 +53,7 @@
   stack: [@for (tech of heroStack(); track tech; let last = $last) {<span class="s">"{{ tech }}"</span>@if (!last) {, }}],
   disponible: <span class="b">{{ d.profile.availability ? 'true' : 'false' }}</span>,
 &#125;;</pre>
+        </div>
         </div>
       </div>
     </section>
@@ -381,12 +386,30 @@
 
   @if (d.settings.assistantEnabled) {
     <app-assistant-widget [greeting]="d.settings.assistantGreeting" [suggestions]="d.settings.assistantSuggestions"
-      [ownerName]="firstName()" />
+      [ownerName]="firstName()" [avatarUrl]="d.profile.avatarUrl" [fullName]="d.profile.fullName" />
   }
 } @else if (loadError()) {
   <div class="container state">
     <p class="alert alert-error">Le contenu n'a pas pu être chargé. Vérifiez que l'API est démarrée.</p>
   </div>
 } @else {
-  <div class="container state"><p class="muted mono">Chargement…</p></div>
+  <!-- Squelette affiché pendant le chargement du contenu -->
+  <div class="container skeleton-page" aria-busy="true" aria-label="Chargement du contenu">
+    <div class="hero-grid">
+      <div class="flex flex-col gap-4">
+        <div class="skeleton h-7 w-48 rounded-full"></div>
+        <div class="skeleton h-4 w-80"></div>
+        <div class="skeleton h-16 w-full max-w-md"></div>
+        <div class="skeleton h-5 w-full max-w-lg"></div>
+        <div class="flex gap-3 mt-4"><div class="skeleton h-10 w-40"></div><div class="skeleton h-10 w-32"></div></div>
+      </div>
+      <div class="flex flex-col items-center gap-6">
+        <div class="skeleton w-40 h-40 rounded-full!"></div>
+        <div class="skeleton h-40 w-full"></div>
+      </div>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-24">
+      @for (n of [1, 2, 3, 4]; track n) { <div class="skeleton h-36"></div> }
+    </div>
+  </div>
 }

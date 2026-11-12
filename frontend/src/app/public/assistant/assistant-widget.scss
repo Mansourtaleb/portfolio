@@ -205,3 +205,29 @@
     justify-content: center;
   }
 }
+
+.head-avatar,
+.launcher-avatar {
+  position: relative;
+  display: inline-flex;
+}
+.ai-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: #0b0f19 !important;
+  border: 2px solid var(--bg-solid);
+}
+.launcher-avatar .ai-badge {
+  width: 15px;
+  height: 15px;
+}
+.launcher {
+  padding-left: 8px;
+}

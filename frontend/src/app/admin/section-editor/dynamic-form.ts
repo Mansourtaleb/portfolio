@@ -1,19 +1,21 @@
-import { ChangeDetectionStrategy, Component, input, output, signal, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { LinesInput } from './lines-input';
 import { FieldDef } from './sections';
+import { TagInput } from './tag-input';
 
 type Draft = Record<string, any>;
 
 /**
- * Formulaire généré à partir d'une liste de champs. Les listes sont éditées en
- * « une valeur par ligne », ce qui reste simple et rapide à saisir.
+ * Formulaire généré à partir d'une liste de champs.
+ * Signale s'il contient des modifications non enregistrées (dirtyChange).
  */
 @Component({
   selector: 'app-dynamic-form',
-  imports: [FormsModule],
+  imports: [FormsModule, TagInput, LinesInput],
   template: `
-    <form class="grid" (ngSubmit)="submit()" #f="ngForm" novalidate>
+    <form class="grid" (ngSubmit)="submit()" #f="ngForm" novalidate (input)="check()" (change)="check()">
       @for (field of fields(); track field.key) {
         <div class="field" [class.wide]="field.wide || field.type === 'checkbox'">
           @switch (field.type) {
@@ -32,10 +34,15 @@ type Draft = Record<string, any>;
               <textarea class="textarea" [id]="'f-' + field.key" [name]="field.key" [rows]="field.rows ?? 3"
                 [(ngModel)]="draft[field.key]" [required]="!!field.required" [class.invalid]="errors()[field.key]"></textarea>
             }
-            @case ('list') {
+            @case ('tags') {
               <label [for]="'f-' + field.key">{{ field.label }}</label>
-              <textarea class="textarea mono-list" [id]="'f-' + field.key" [name]="field.key" [rows]="field.rows ?? 4"
-                [(ngModel)]="draft[field.key]" [class.invalid]="errors()[field.key]"></textarea>
+              <app-tag-input [inputId]="'f-' + field.key" [value]="draft[field.key]" (valueChange)="setList(field.key, $event)"
+                [placeholder]="field.placeholder ?? 'Tapez puis Entrée'" />
+            }
+            @case ('lines') {
+              <label>{{ field.label }}</label>
+              <app-lines-input [value]="draft[field.key]" (valueChange)="setList(field.key, $event)"
+                [placeholder]="field.placeholder ?? ''" />
             }
             @default {
               <label [for]="'f-' + field.key">{{ field.label }}@if (field.required) {<span class="req"> *</span>}</label>
@@ -53,6 +60,7 @@ type Draft = Record<string, any>;
         </div>
       }
       <div class="wide actions">
+        @if (dirty()) { <span class="dirty mono">● modifications non enregistrées</span> }
         <ng-content />
         <button class="btn btn-primary" type="submit" [disabled]="saving() || f.invalid">
           {{ saving() ? 'Enregistrement…' : submitLabel() }}
@@ -64,8 +72,10 @@ type Draft = Record<string, any>;
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
     .wide { grid-column: 1 / -1; }
     .req { color: var(--danger); }
-    .mono-list { font-family: var(--mono); font-size: 13px; }
-    .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+    .actions { position: sticky; bottom: 0; display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+      margin: 6px -22px -22px; padding: 14px 22px; background: var(--bg-solid); border-top: 1px solid var(--border);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg); z-index: 5; }
+    .dirty { margin-right: auto; font-size: 12px; color: var(--warning); }
     @media (max-width: 640px) { .grid { grid-template-columns: minmax(0, 1fr); } }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,9 +87,11 @@ export class DynamicForm {
   readonly errors = input<Record<string, string>>({});
   readonly submitLabel = input('Enregistrer');
   readonly save = output<Draft>();
+  readonly dirtyChange = output<boolean>();
 
   protected draft: Draft = {};
-  private readonly version = signal(0);
+  protected readonly dirty = signal(false);
+  private initial = '';
 
   constructor() {
     effect(() => {
@@ -87,8 +99,8 @@ export class DynamicForm {
       const draft: Draft = {};
       for (const field of this.fields()) {
         const v = value[field.key];
-        if (field.type === 'list') {
-          draft[field.key] = Array.isArray(v) ? v.join('\n') : '';
+        if (field.type === 'tags' || field.type === 'lines') {
+          draft[field.key] = Array.isArray(v) ? [...v] : [];
         } else if (field.type === 'checkbox') {
           draft[field.key] = !!v;
         } else {
@@ -96,25 +108,53 @@ export class DynamicForm {
         }
       }
       this.draft = draft;
-      this.version.update((n) => n + 1);
+      // untracked : l'effet ne doit dépendre que de value/fields, pas de l'état « modifié ».
+      untracked(() => {
+        this.initial = JSON.stringify(this.normalized());
+        this.setDirty(false);
+      });
     });
   }
 
+  protected setList(key: string, list: string[]): void {
+    this.draft = { ...this.draft, [key]: list };
+    this.check();
+  }
+
+  /** Compare le brouillon à la valeur chargée (après la mise à jour du modèle par ngModel). */
+  protected check(): void {
+    queueMicrotask(() => this.setDirty(JSON.stringify(this.normalized()) !== this.initial));
+  }
+
   protected submit(): void {
+    this.save.emit(this.normalized());
+  }
+
+  /** Après un enregistrement réussi, la valeur courante devient la référence. */
+  markSaved(): void {
+    this.initial = JSON.stringify(this.normalized());
+    this.setDirty(false);
+  }
+
+  private normalized(): Draft {
     const result: Draft = {};
     for (const field of this.fields()) {
       const v = this.draft[field.key];
-      if (field.type === 'list') {
-        result[field.key] = String(v ?? '')
-          .split('\n')
-          .map((line) => line.trim())
-          .filter(Boolean);
+      if (field.type === 'tags' || field.type === 'lines') {
+        result[field.key] = (v as string[]).map((s) => s.trim()).filter(Boolean);
       } else if (field.type === 'checkbox') {
         result[field.key] = !!v;
       } else {
-        result[field.key] = typeof v === 'string' ? (v.trim() || null) : v;
+        result[field.key] = typeof v === 'string' ? v.trim() || null : (v ?? null);
       }
     }
-    this.save.emit(result);
+    return result;
+  }
+
+  private setDirty(value: boolean): void {
+    if (this.dirty() !== value) {
+      this.dirty.set(value);
+      this.dirtyChange.emit(value);
+    }
   }
 }

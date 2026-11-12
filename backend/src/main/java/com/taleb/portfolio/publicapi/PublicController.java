@@ -25,6 +25,7 @@ import com.taleb.portfolio.contact.ContactService;
 import com.taleb.portfolio.contact.ContactService.ContactRequest;
 import com.taleb.portfolio.content.certification.Certification;
 import com.taleb.portfolio.content.certification.CertificationDto;
+import com.taleb.portfolio.content.avatar.AvatarService;
 import com.taleb.portfolio.content.cv.CvService;
 import com.taleb.portfolio.content.education.Education;
 import com.taleb.portfolio.content.education.EducationDto;
@@ -62,6 +63,7 @@ class PublicController {
 	private final ContactService contactService;
 	private final AssistantService assistantService;
 	private final CvService cvService;
+	private final AvatarService avatarService;
 	private final RateLimiter contactLimiter = new RateLimiter(3, Duration.ofMinutes(10));
 
 	PublicController(ProfileService profileService, SiteSettingsService settingsService,
@@ -69,8 +71,10 @@ class PublicController {
 			SectionService<Project, ProjectDto> projects, SectionService<Education, EducationDto> education,
 			SectionService<Certification, CertificationDto> certifications,
 			SectionService<SpokenLanguage, SpokenLanguageDto> languages, ProjectRepository projectRepository,
-			ContactService contactService, AssistantService assistantService, CvService cvService) {
+			ContactService contactService, AssistantService assistantService, CvService cvService,
+			AvatarService avatarService) {
 		this.cvService = cvService;
+		this.avatarService = avatarService;
 		this.profileService = profileService;
 		this.settingsService = settingsService;
 		this.skills = skills;
@@ -88,7 +92,8 @@ class PublicController {
 	ResponseEntity<PortfolioView> portfolio() {
 		SiteSettingsDto settings = settingsService.get();
 		PortfolioView view = new PortfolioView(
-				PublicProfile.from(profileService.get(), cvService.exists() ? CvService.PUBLIC_URL : null),
+				PublicProfile.from(profileService.get(), cvService.exists() ? CvService.PUBLIC_URL : null,
+						avatarService.publicUrl().orElse(null)),
 				PublicSettings.from(settings, assistantService.isAvailable()),
 				skills.findVisible(),
 				experiences.findVisible(),
@@ -130,11 +135,11 @@ class PublicController {
 			String availability, List<String> qualities, List<String> extras) {
 
 		/** Le CV téléversé dans l'admin est prioritaire sur un lien saisi à la main. */
-		static PublicProfile from(ProfileDto p, String uploadedCvUrl) {
+		static PublicProfile from(ProfileDto p, String uploadedCvUrl, String uploadedAvatarUrl) {
 			return new PublicProfile(p.fullName(), p.headline(), p.tagline(), p.summary(), p.location(), p.email(),
 					Boolean.TRUE.equals(p.showPhone()) ? p.phone() : null, p.linkedinUrl(), p.githubUrl(),
 					uploadedCvUrl != null ? uploadedCvUrl : p.cvUrl(),
-					p.avatarUrl(), p.availability(), p.qualities(), p.extras());
+					uploadedAvatarUrl != null ? uploadedAvatarUrl : p.avatarUrl(), p.availability(), p.qualities(), p.extras());
 		}
 	}
 

@@ -7,6 +7,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ApiProblem, Portfolio, SectionKey } from '../../core/models';
 import { PublicApiService } from '../../core/public-api.service';
 import { ThemeService } from '../../core/theme.service';
+import { Avatar } from '../../shared/avatar';
 import { Icon } from '../../shared/icon';
 import { RevealDirective } from '../../shared/reveal.directive';
 import { AssistantWidget } from '../assistant/assistant-widget';
@@ -23,7 +24,7 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, FormsModule, Icon, AssistantWidget, SiteHeader, RevealDirective],
+  imports: [RouterLink, FormsModule, Icon, AssistantWidget, SiteHeader, RevealDirective, Avatar],
   templateUrl: './home.html',
   styleUrl: './home.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -3,7 +3,8 @@
  * et une liste de champs. L'écran d'édition générique se construit à partir de ces définitions.
  */
 
-export type FieldType = 'text' | 'textarea' | 'list' | 'url' | 'email' | 'checkbox' | 'select';
+/** tags = liste courte en étiquettes ; lines = liste de phrases, une ligne par élément. */
+export type FieldType = 'text' | 'textarea' | 'tags' | 'lines' | 'url' | 'email' | 'checkbox' | 'select';
 
 export interface FieldDef {
   key: string;
@@ -51,7 +52,7 @@ export const SECTIONS: SectionDef[] = [
     fields: [
       { key: 'name', label: 'Nom du groupe', type: 'text', required: true, maxLength: 120 },
       { key: 'icon', label: 'Icône', type: 'select', options: ICON_OPTIONS },
-      { key: 'items', label: 'Compétences', type: 'list', hint: 'Une compétence par ligne', rows: 7, wide: true },
+      { key: 'items', label: 'Compétences', type: 'tags', hint: 'Entrée ou virgule pour ajouter, glisser pour réordonner', rows: 7, wide: true },
     ],
   },
   {
@@ -71,8 +72,8 @@ export const SECTIONS: SectionDef[] = [
       { key: 'location', label: 'Lieu', type: 'text', maxLength: 120 },
       { key: 'kind', label: 'Type', type: 'text', placeholder: 'Stage PFE, CDI…', maxLength: 60 },
       { key: 'summary', label: 'Résumé', type: 'textarea', rows: 2, wide: true },
-      { key: 'highlights', label: 'Réalisations', type: 'list', hint: 'Une réalisation par ligne', rows: 5, wide: true },
-      { key: 'stack', label: 'Technologies', type: 'list', hint: 'Une technologie par ligne', rows: 4, wide: true },
+      { key: 'highlights', label: 'Réalisations', type: 'lines', hint: 'Entrée crée une nouvelle ligne ; glisser la poignée pour réordonner', rows: 5, wide: true },
+      { key: 'stack', label: 'Technologies', type: 'tags', hint: 'Entrée ou virgule pour ajouter', wide: true },
     ],
   },
   {
@@ -99,10 +100,10 @@ export const SECTIONS: SectionDef[] = [
       { key: 'summary', label: 'Résumé (carte)', type: 'textarea', rows: 2, wide: true },
       { key: 'description', label: 'Description (page détail)', type: 'textarea', rows: 5, wide: true },
       { key: 'role', label: 'Mon rôle', type: 'textarea', rows: 3, wide: true },
-      { key: 'highlights', label: 'Réalisations clés', type: 'list', hint: 'Une par ligne', rows: 6, wide: true },
-      { key: 'stack', label: 'Stack', type: 'list', hint: 'Une technologie par ligne', rows: 5, wide: true },
+      { key: 'highlights', label: 'Réalisations clés', type: 'lines', hint: 'Entrée crée une nouvelle ligne', wide: true },
+      { key: 'stack', label: 'Stack', type: 'tags', hint: 'Entrée ou virgule pour ajouter', wide: true },
       {
-        key: 'architecture', label: "Schéma d'architecture", type: 'list', rows: 6, wide: true,
+        key: 'architecture', label: "Schéma d'architecture", type: 'lines', rows: 6, wide: true,
         hint: 'Une couche par ligne, du front vers les données : « Nom | description »',
       },
       { key: 'repoUrl', label: 'Lien du code', type: 'url', hint: 'Ignoré si le projet est confidentiel' },
@@ -193,9 +194,8 @@ export const PROFILE_FIELDS: FieldDef[] = [
   { key: 'linkedinUrl', label: 'LinkedIn', type: 'url' },
   { key: 'githubUrl', label: 'GitHub', type: 'url' },
   { key: 'cvUrl', label: 'Lien du CV (PDF)', type: 'text', hint: 'URL ou fichier du dossier public, ex. /cv.pdf', maxLength: 300 },
-  { key: 'avatarUrl', label: 'Photo (URL)', type: 'text', maxLength: 300 },
-  { key: 'qualities', label: 'Qualités', type: 'list', hint: 'Une par ligne', rows: 5 },
-  { key: 'extras', label: 'Divers', type: 'list', hint: 'Une ligne par élément (vie associative, permis…)', rows: 5 },
+  { key: 'qualities', label: 'Qualités', type: 'tags', hint: 'Entrée ou virgule pour ajouter' },
+  { key: 'extras', label: 'Divers', type: 'lines', hint: 'Une ligne par élément (vie associative, permis…)', rows: 5 },
 ];
 
 export function sectionByKey(key: string): SectionDef {

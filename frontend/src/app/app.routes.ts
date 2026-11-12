@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { adminGuard } from './core/auth';
+import { unsavedChangesGuard } from './shared/unsaved-changes';
 import { SECTIONS } from './admin/section-editor/sections';
 
 export const routes: Routes = [
@@ -19,17 +20,20 @@ export const routes: Routes = [
       {
         path: 'profil',
         loadComponent: () => import('./admin/section-editor/profile-editor').then((m) => m.ProfileEditor),
+        canDeactivate: [unsavedChangesGuard],
         title: 'Profil',
       },
       ...SECTIONS.map((section) => ({
         path: section.route,
         loadComponent: () => import('./admin/section-editor/section-editor').then((m) => m.SectionEditor),
         data: { section: section.key },
+        canDeactivate: [unsavedChangesGuard],
         title: section.title,
       })),
       {
         path: 'reglages',
         loadComponent: () => import('./admin/settings/settings-editor').then((m) => m.SettingsEditor),
+        canDeactivate: [unsavedChangesGuard],
         title: 'Réglages',
       },
       {
@@ -49,5 +53,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: '' },
+  { path: '**', loadComponent: () => import('./public/not-found').then((m) => m.NotFound), title: 'Page introuvable' },
 ];

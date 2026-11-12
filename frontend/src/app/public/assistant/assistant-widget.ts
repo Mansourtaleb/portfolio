@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { ChatSource } from '../../core/models';
+import { Avatar } from '../../shared/avatar';
 import { Icon } from '../../shared/icon';
 import { RichTextPipe } from '../../shared/rich-text.pipe';
 
@@ -28,7 +29,7 @@ interface ChatMessage {
  */
 @Component({
   selector: 'app-assistant-widget',
-  imports: [FormsModule, RouterLink, Icon, RichTextPipe],
+  imports: [FormsModule, RouterLink, Icon, RichTextPipe, Avatar],
   templateUrl: './assistant-widget.html',
   styleUrl: './assistant-widget.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,6 +38,8 @@ export class AssistantWidget {
   readonly greeting = input<string | null>(null);
   readonly suggestions = input<string[]>([]);
   readonly ownerName = input('');
+  readonly fullName = input('');
+  readonly avatarUrl = input<string | null>(null);
 
   protected readonly open = signal(false);
   protected readonly messages = signal<ChatMessage[]>([]);

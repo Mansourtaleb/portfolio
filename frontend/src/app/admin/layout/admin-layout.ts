@@ -6,6 +6,7 @@ import { AdminApiService } from '../../core/admin-api.service';
 import { AuthService } from '../../core/auth.service';
 import { ThemeService } from '../../core/theme.service';
 import { Icon } from '../../shared/icon';
+import { Toasts } from '../../shared/toast';
 import { SECTIONS } from '../section-editor/sections';
 
 interface NavLink {
@@ -17,7 +18,7 @@ interface NavLink {
 
 @Component({
   selector: 'app-admin-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, Toasts],
   template: `
     <div class="min-h-screen md:grid md:grid-cols-[250px_1fr]">
       <aside class="sidebar" [class.open]="menuOpen()">
@@ -59,6 +60,7 @@ interface NavLink {
         </main>
       </div>
     </div>
+    <app-toasts />
   `,
   styles: `
     .sidebar { border-right: 1px solid var(--border); background: var(--bg-solid); padding: 0 12px 24px;

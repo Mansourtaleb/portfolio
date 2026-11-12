@@ -11,7 +11,7 @@ import { SiteHeader } from '../site-header';
   selector: 'app-project-detail',
   imports: [RouterLink, Icon, SiteHeader],
   template: `
-    <app-site-header />
+    <app-site-header [avatarUrl]="avatarUrl()" [name]="ownerName()" />
     <main class="container page">
       <a class="back" routerLink="/" fragment="projects"><app-icon name="arrow-left" [size]="16" /> Tous les projets</a>
       @if (project(); as p) {
@@ -85,9 +85,18 @@ import { SiteHeader } from '../site-header';
           </aside>
         </div>
       } @else if (notFound()) {
-        <p class="alert alert-error state">Ce projet n'existe pas ou n'est plus publié.</p>
+        <div class="state-404">
+          <p class="mono gradient-text big">404</p>
+          <h1>Ce projet n'existe pas ou n'est plus publié.</h1>
+          <a class="btn btn-primary" routerLink="/" fragment="projects">Voir tous les projets</a>
+        </div>
       } @else {
-        <p class="muted mono state">Chargement…</p>
+        <div class="skel" aria-busy="true" aria-label="Chargement du projet">
+          <div class="skeleton h-6 w-64 rounded-full"></div>
+          <div class="skeleton h-12 w-80"></div>
+          <div class="skeleton h-5 w-full max-w-2xl"></div>
+          <div class="layout"><div class="skeleton h-64"></div><div class="skeleton h-48"></div></div>
+        </div>
       }
     </main>
   `,
@@ -108,7 +117,11 @@ import { SiteHeader } from '../site-header';
     .side h3 { font-size: 15px; }
     .confidential { display: flex; gap: 10px; padding: 12px; border-radius: var(--radius); background: var(--warning-soft); color: var(--warning); font-size: 14px; }
     .links { display: flex; gap: 8px; flex-wrap: wrap; }
-    .state { margin-top: 40px; }
+    .skel { display: flex; flex-direction: column; gap: 16px; margin-top: 28px; }
+    .skel .layout { margin-top: 24px; }
+    .state-404 { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 80px 0; }
+    .state-404 .big { font-size: 96px; font-weight: 600; line-height: 1; }
+    .state-404 h1 { font-size: 24px; margin: 0; }
     .arch { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; align-items: stretch; }
     .arch-node { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; }
     .arch-node strong { font-size: 15px; }
@@ -128,8 +141,14 @@ export class ProjectDetail {
 
   protected readonly project = signal<Project | null>(null);
   protected readonly notFound = signal(false);
+  protected readonly avatarUrl = signal<string | null>(null);
+  protected readonly ownerName = signal('');
 
   constructor() {
+    this.api.portfolio().subscribe((d) => {
+      this.avatarUrl.set(d.profile.avatarUrl);
+      this.ownerName.set(d.profile.fullName);
+    });
     effect(() => {
       const slug = this.slug();
       this.project.set(null);
