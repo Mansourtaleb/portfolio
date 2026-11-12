@@ -1,0 +1,392 @@
+<app-site-header [items]="navItems()" />
+
+@if (data(); as d) {
+  <main>
+    <!-- ================= Héros ================= -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-text">
+          @if (d.profile.availability) {
+            <span class="chip chip-success status"><span class="dot"></span>{{ d.profile.availability }}</span>
+          }
+          <p class="prompt mono">&gt; {{ d.profile.headline }}</p>
+          <h1>{{ firstName() }} <span class="accent">{{ lastName() }}</span></h1>
+          @if (d.profile.tagline) {
+            <p class="tagline">{{ d.profile.tagline }}</p>
+          }
+          <div class="hero-actions">
+            @if (sections().includes('projects')) {
+              <a class="btn btn-primary" routerLink="/" fragment="projects">Voir les projets <app-icon name="arrow-right" [size]="16" /></a>
+            }
+            @if (d.profile.cvUrl) {
+              <a class="btn" [href]="d.profile.cvUrl" target="_blank" rel="noopener"><app-icon name="download" [size]="16" /> Télécharger le CV</a>
+            }
+            @if (sections().includes('contact')) {
+              <a class="btn btn-ghost" routerLink="/" fragment="contact">Me contacter</a>
+            }
+          </div>
+          <div class="socials">
+            @if (d.profile.location) {
+              <span class="muted"><app-icon name="map-pin" [size]="16" /> {{ d.profile.location }}</span>
+            }
+            @if (d.profile.githubUrl) {
+              <a [href]="d.profile.githubUrl" target="_blank" rel="noopener" aria-label="GitHub"><app-icon name="github" /></a>
+            }
+            @if (d.profile.linkedinUrl) {
+              <a [href]="d.profile.linkedinUrl" target="_blank" rel="noopener" aria-label="LinkedIn"><app-icon name="linkedin" /></a>
+            }
+            @if (d.profile.email) {
+              <a [href]="'mailto:' + d.profile.email" aria-label="E-mail"><app-icon name="mail" /></a>
+            }
+          </div>
+        </div>
+
+        <div class="code-card mono" aria-hidden="true">
+          <div class="code-head"><span></span><span></span><span></span><em>profil.ts</em></div>
+          <pre><span class="k">const</span> <span class="v">profil</span> = &#123;
+  nom: <span class="s">"{{ d.profile.fullName }}"</span>,
+  role: <span class="s">"Full-Stack &amp; IA"</span>,
+  stack: [@for (tech of heroStack(); track tech; let last = $last) {<span class="s">"{{ tech }}"</span>@if (!last) {, }}],
+  disponible: <span class="b">{{ d.profile.availability ? 'true' : 'false' }}</span>,
+&#125;;</pre>
+        </div>
+      </div>
+    </section>
+
+    @for (key of sections(); track key) {
+      @switch (key) {
+        <!-- ================= Profil ================= -->
+        @case ('about') {
+          <section id="about" class="section">
+            <div class="container">
+              <p class="eyebrow mono">01 · {{ labels.about }}</p>
+              <h2>Qui suis-je ?</h2>
+              <div class="about-grid">
+                <p class="lead">{{ d.profile.summary }}</p>
+                <div class="facts card">
+                  @if (d.profile.location) {
+                    <div><app-icon name="map-pin" [size]="18" /><span>{{ d.profile.location }}</span></div>
+                  }
+                  @if (d.profile.availability) {
+                    <div><app-icon name="calendar" [size]="18" /><span>{{ d.profile.availability }}</span></div>
+                  }
+                  @if (d.languages.length) {
+                    <div><app-icon name="language" [size]="18" />
+                      <span>@for (l of d.languages; track l.id; let last = $last) {{{ l.name }} ({{ l.level }})@if (!last) {, }}</span>
+                    </div>
+                  }
+                  @if (d.profile.qualities.length) {
+                    <div class="chips">
+                      @for (q of d.profile.qualities; track q) {
+                        <span class="chip chip-accent">{{ q }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          </section>
+        }
+
+        <!-- ================= Compétences ================= -->
+        @case ('skills') {
+          <section id="skills" class="section">
+            <div class="container">
+              <p class="eyebrow mono">02 · {{ labels.skills }}</p>
+              <h2>Ce que je maîtrise</h2>
+              <div class="bento">
+                <article class="card bento-stats" appReveal>
+                  <p class="eyebrow mono">En chiffres</p>
+                  <div class="stats">
+                    <div><strong class="mono gradient-text">{{ d.experiences.length }}</strong><span>expériences</span></div>
+                    <div><strong class="mono gradient-text">{{ d.projects.length }}</strong><span>projets publiés</span></div>
+                    <div><strong class="mono gradient-text">{{ skillCount() }}</strong><span>technologies</span></div>
+                    <div><strong class="mono gradient-text">{{ d.certifications.length }}</strong><span>certifications</span></div>
+                  </div>
+                </article>
+                @for (group of d.skills; track group.id; let i = $index) {
+                  <article class="card card-hover skill-card" [class.bento-wide]="group.items.length > 5" [appReveal]="i * 60">
+                    <div class="skill-head">
+                      <span class="skill-icon"><app-icon [name]="skillIcon(group.icon)" /></span>
+                      <h3>{{ group.name }}</h3>
+                      <span class="count mono">{{ group.items.length }}</span>
+                    </div>
+                    <div class="chips">
+                      @for (item of group.items; track item) {
+                        <span class="chip mono-chip">{{ item }}</span>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+            </div>
+          </section>
+        }
+
+        <!-- ================= Parcours ================= -->
+        @case ('experience') {
+          <section id="experience" class="section">
+            <div class="container">
+              <p class="eyebrow mono">03 · {{ labels.experience }}</p>
+              <h2>Expériences</h2>
+              <ol class="timeline">
+                @for (exp of d.experiences; track exp.id; let i = $index) {
+                  <li class="timeline-item" [class.open]="isOpen(i)" [appReveal]="i * 80">
+                    <span class="timeline-dot"></span>
+                    <div class="card card-hover">
+                      <button type="button" class="exp-toggle" (click)="toggleExp(i)" [attr.aria-expanded]="isOpen(i)">
+                      <div class="exp-head">
+                        <div>
+                          <h3>{{ exp.role }}</h3>
+                          <p class="company">{{ exp.company }}@if (exp.location) {<span class="muted"> · {{ exp.location }}</span>}</p>
+                        </div>
+                        <div class="exp-meta">
+                          @if (exp.kind) {
+                            <span class="chip chip-cyan">{{ exp.kind }}</span>
+                          }
+                          <span class="period mono">{{ exp.period }}</span>
+                          <app-icon class="chev" name="chevron-down" [size]="18" />
+                        </div>
+                      </div>
+                      </button>
+                      @if (isOpen(i)) {
+                      <div class="exp-body">
+                      @if (exp.summary) {
+                        <p class="muted exp-summary">{{ exp.summary }}</p>
+                      }
+                      @if (exp.highlights.length) {
+                        <ul class="highlights">
+                          @for (h of exp.highlights; track h) {
+                            <li>{{ h }}</li>
+                          }
+                        </ul>
+                      }
+                      @if (exp.stack.length) {
+                        <div class="chips stack">
+                          @for (t of exp.stack; track t) {
+                            <span class="chip mono-chip">{{ t }}</span>
+                          }
+                        </div>
+                      }
+                      </div>
+                      }
+                    </div>
+                  </li>
+                }
+              </ol>
+            </div>
+          </section>
+        }
+
+        <!-- ================= Projets ================= -->
+        @case ('projects') {
+          <section id="projects" class="section">
+            <div class="container">
+              <p class="eyebrow mono">04 · {{ labels.projects }}</p>
+              <h2>Projets</h2>
+              @if (techs().length > 1) {
+                <div class="filters" role="toolbar" aria-label="Filtrer par technologie">
+                  <button type="button" class="filter" [class.active]="!techFilter()" (click)="techFilter.set(null)">Tous</button>
+                  @for (t of techs(); track t) {
+                    <button type="button" class="filter mono" [class.active]="techFilter() === t" (click)="techFilter.set(t)">{{ t }}</button>
+                  }
+                </div>
+              }
+              <div class="projects-grid">
+                @for (p of filteredProjects(); track p.id; let i = $index) {
+                  <article class="card card-hover project-card" [class.featured]="p.featured && !techFilter()" [appReveal]="i * 60">
+                    <div class="project-top">
+                      <div class="chips">
+                        @if (p.context) {
+                          <span class="chip chip-accent">{{ p.context }}</span>
+                        }
+                        @if (p.status === 'IN_PROGRESS') {
+                          <span class="chip chip-warning">En cours</span>
+                        }
+                        @if (p.confidential) {
+                          <span class="chip"><app-icon name="lock" [size]="13" /> Confidentiel</span>
+                        }
+                      </div>
+                      @if (p.period) {
+                        <span class="period mono">{{ p.period }}</span>
+                      }
+                    </div>
+                    <h3>{{ p.title }}</h3>
+                    @if (p.tagline) {
+                      <p class="project-tagline">{{ p.tagline }}</p>
+                    }
+                    @if (p.summary) {
+                      <p class="muted">{{ p.summary }}</p>
+                    }
+                    <div class="chips stack">
+                      @for (t of p.stack.slice(0, 7); track t) {
+                        <span class="chip mono-chip" [class.chip-cyan]="t === techFilter()">{{ t }}</span>
+                      }
+                    </div>
+                    <div class="project-links">
+                      <a class="btn btn-sm" [routerLink]="['/projects', p.slug]">Voir le détail <app-icon name="arrow-right" [size]="14" /></a>
+                      @if (p.repoUrl) {
+                        <a class="btn btn-sm btn-ghost" [href]="p.repoUrl" target="_blank" rel="noopener"><app-icon name="github" [size]="16" /> Code</a>
+                      }
+                      @if (p.demoUrl) {
+                        <a class="btn btn-sm btn-ghost" [href]="p.demoUrl" target="_blank" rel="noopener"><app-icon name="external" [size]="16" /> Démo</a>
+                      }
+                    </div>
+                  </article>
+                } @empty {
+                  <p class="muted">Aucun projet avec cette technologie.</p>
+                }
+              </div>
+            </div>
+          </section>
+        }
+
+        <!-- ================= Formation ================= -->
+        @case ('education') {
+          <section id="education" class="section">
+            <div class="container">
+              <p class="eyebrow mono">05 · {{ labels.education }}</p>
+              <h2>Formation &amp; certifications</h2>
+              <div class="edu-grid">
+                <div class="edu-list">
+                  @for (e of d.education; track e.id) {
+                    <article class="card edu-card">
+                      <span class="skill-icon"><app-icon name="school" /></span>
+                      <div>
+                        <h3>{{ e.degree }}</h3>
+                        <p class="company">{{ e.school }}@if (e.location) {<span class="muted"> · {{ e.location }}</span>}</p>
+                        <p class="muted small">
+                          @if (e.field) {<span>{{ e.field }}</span>}
+                          @if (e.period) {<span class="mono"> · {{ e.period }}</span>}
+                        </p>
+                        @if (e.mention) {
+                          <span class="chip chip-success">Mention {{ e.mention }}</span>
+                        }
+                        @if (e.description) {
+                          <p class="muted small edu-desc">{{ e.description }}</p>
+                        }
+                      </div>
+                    </article>
+                  }
+                </div>
+                <aside class="card side">
+                  @if (d.certifications.length) {
+                    <h3><app-icon name="award" [size]="18" /> Certifications</h3>
+                    <ul class="plain">
+                      @for (c of d.certifications; track c.id) {
+                        <li>
+                          <strong>{{ c.name }}</strong>
+                          <span class="muted"> — {{ c.issuer }}@if (c.issuedOn) {, {{ c.issuedOn }}}</span>
+                          @if (c.credentialUrl) {
+                            <a [href]="c.credentialUrl" target="_blank" rel="noopener" class="small"> Vérifier <app-icon name="external" [size]="12" /></a>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  }
+                  @if (d.languages.length) {
+                    <h3><app-icon name="language" [size]="18" /> Langues</h3>
+                    <ul class="plain">
+                      @for (l of d.languages; track l.id) {
+                        <li><strong>{{ l.name }}</strong> <span class="muted">— {{ l.level }}</span></li>
+                      }
+                    </ul>
+                  }
+                  @if (d.profile.extras.length) {
+                    <h3><app-icon name="sparkles" [size]="18" /> Divers</h3>
+                    <ul class="plain">
+                      @for (x of d.profile.extras; track x) {
+                        <li class="muted">{{ x }}</li>
+                      }
+                    </ul>
+                  }
+                </aside>
+              </div>
+            </div>
+          </section>
+        }
+
+        <!-- ================= Contact ================= -->
+        @case ('contact') {
+          <section id="contact" class="section">
+            <div class="container">
+              <p class="eyebrow mono">06 · {{ labels.contact }}</p>
+              <h2>Travaillons ensemble</h2>
+              <div class="contact-grid">
+                <div class="contact-info">
+                  <p class="lead">Un poste, un projet ou une question ? Écrivez-moi, je réponds rapidement.</p>
+                  @if (d.profile.email) {
+                    <a class="contact-line" [href]="'mailto:' + d.profile.email"><app-icon name="mail" /> {{ d.profile.email }}</a>
+                  }
+                  @if (d.profile.phone) {
+                    <a class="contact-line" [href]="'tel:' + d.profile.phone"><app-icon name="phone" /> {{ d.profile.phone }}</a>
+                  }
+                  @if (d.profile.linkedinUrl) {
+                    <a class="contact-line" [href]="d.profile.linkedinUrl" target="_blank" rel="noopener"><app-icon name="linkedin" /> LinkedIn</a>
+                  }
+                  @if (d.profile.githubUrl) {
+                    <a class="contact-line" [href]="d.profile.githubUrl" target="_blank" rel="noopener"><app-icon name="github" /> GitHub</a>
+                  }
+                </div>
+                @if (d.settings.contactFormEnabled) {
+                  <form class="card" (ngSubmit)="sendContact()" #f="ngForm">
+                    @if (contactSent()) {
+                      <p class="alert alert-success">Merci, votre message est bien envoyé !</p>
+                    } @else {
+                      <div class="form-row">
+                        <div class="field">
+                          <label for="c-name">Nom</label>
+                          <input id="c-name" class="input" name="name" [(ngModel)]="contact.name" required maxlength="120" autocomplete="name" />
+                          @if (contactErrors()['name']) {<span class="error">{{ contactErrors()['name'] }}</span>}
+                        </div>
+                        <div class="field">
+                          <label for="c-email">E-mail</label>
+                          <input id="c-email" class="input" type="email" name="email" [(ngModel)]="contact.email" required maxlength="160" autocomplete="email" />
+                          @if (contactErrors()['email']) {<span class="error">{{ contactErrors()['email'] }}</span>}
+                        </div>
+                      </div>
+                      <div class="field">
+                        <label for="c-subject">Objet <span class="hint">(facultatif)</span></label>
+                        <input id="c-subject" class="input" name="subject" [(ngModel)]="contact.subject" maxlength="200" />
+                      </div>
+                      <div class="field">
+                        <label for="c-message">Message</label>
+                        <textarea id="c-message" class="textarea" name="message" rows="5" [(ngModel)]="contact.message" required minlength="10" maxlength="5000"></textarea>
+                        @if (contactErrors()['message']) {<span class="error">{{ contactErrors()['message'] }}</span>}
+                      </div>
+                      <input class="honeypot" name="website" [(ngModel)]="contact.website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+                      @if (contactError()) {
+                        <p class="alert alert-error">{{ contactError() }}</p>
+                      }
+                      <button class="btn btn-primary" type="submit" [disabled]="sending() || f.invalid">
+                        <app-icon name="send" [size]="16" /> {{ sending() ? 'Envoi…' : 'Envoyer' }}
+                      </button>
+                    }
+                  </form>
+                }
+              </div>
+            </div>
+          </section>
+        }
+      }
+    }
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-bar">
+      <span class="muted">© {{ year }} {{ d.profile.fullName }}</span>
+      <span class="muted small mono">Angular · Spring Boot · Claude</span>
+    </div>
+  </footer>
+
+  @if (d.settings.assistantEnabled) {
+    <app-assistant-widget [greeting]="d.settings.assistantGreeting" [suggestions]="d.settings.assistantSuggestions"
+      [ownerName]="firstName()" />
+  }
+} @else if (loadError()) {
+  <div class="container state">
+    <p class="alert alert-error">Le contenu n'a pas pu être chargé. Vérifiez que l'API est démarrée.</p>
+  </div>
+} @else {
+  <div class="container state"><p class="muted mono">Chargement…</p></div>
+}
