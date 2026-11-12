@@ -3,6 +3,7 @@ package com.taleb.portfolio.contact;
 import java.time.Instant;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,15 +18,19 @@ import jakarta.validation.constraints.Size;
 public class ContactService {
 
 	private final ContactMessageRepository repository;
+	private final ApplicationEventPublisher events;
 
-	ContactService(ContactMessageRepository repository) {
+	ContactService(ContactMessageRepository repository, ApplicationEventPublisher events) {
 		this.repository = repository;
+		this.events = events;
 	}
 
 	@Transactional
 	public void submit(ContactRequest request) {
-		repository.save(new ContactMessage(Texts.clean(request.name()), Texts.clean(request.email()),
-				Texts.clean(request.subject()), request.message().strip()));
+		ContactMessage saved = repository.save(new ContactMessage(Texts.clean(request.name()),
+				Texts.clean(request.email()), Texts.clean(request.subject()), request.message().strip()));
+		events.publishEvent(new ContactNotifier.ContactReceivedEvent(saved.getId(), saved.getName(), saved.getEmail(),
+				saved.getSubject(), saved.getMessage()));
 	}
 
 	@Transactional(readOnly = true)

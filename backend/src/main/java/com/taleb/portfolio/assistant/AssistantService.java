@@ -47,12 +47,14 @@ public class AssistantService {
 	private final AppProperties.Assistant config;
 	private final KnowledgeIndex index;
 	private final KnowledgeBuilder builder;
+	private final ExchangeLog exchanges;
 	private final AnthropicClient client;
 	private final RateLimiter perIpLimiter;
 	private final AtomicReference<LocalDate> quotaDay = new AtomicReference<>(LocalDate.now());
 	private final AtomicInteger dailyCount = new AtomicInteger();
 
-	AssistantService(AppProperties properties, KnowledgeIndex index, KnowledgeBuilder builder) {
+	AssistantService(AppProperties properties, KnowledgeIndex index, KnowledgeBuilder builder, ExchangeLog exchanges) {
+		this.exchanges = exchanges;
 		this.config = properties.assistant();
 		this.index = index;
 		this.builder = builder;
@@ -94,8 +96,12 @@ public class AssistantService {
 
 	/** Répond à la question en diffusant les événements SSE : sources, delta (texte), done ou error. */
 	void streamAnswer(ChatRequest request, SseEmitter emitter) {
+		long started = System.nanoTime();
+		StringBuilder answer = new StringBuilder();
+		List<String> sourceTitles = new ArrayList<>();
 		try {
 			List<KnowledgeIndex.ScoredChunk> context = retrieve(request.question());
+			context.forEach(c -> sourceTitles.add(c.chunk().title()));
 			emitter.send(SseEmitter.event().name("sources").data(context.stream()
 					.filter(c -> c.chunk().link() != null)
 					.map(c -> new Source(c.chunk().title(), c.chunk().section(), c.chunk().link()))
@@ -107,31 +113,62 @@ public class AssistantService {
 				stream.stream().forEach(event -> {
 					event.contentBlockDelta()
 							.flatMap(delta -> delta.delta().text())
-							.ifPresent(text -> send(emitter, "delta", new Delta(text.text())));
+							.ifPresent(text -> {
+								answer.append(text.text());
+								send(emitter, "delta", new Delta(text.text()));
+							});
 					event.messageDelta()
 							.flatMap(delta -> delta.delta().stopReason())
 							.ifPresent(stopReason::set);
 				});
 			}
+			String status = "ANSWERED";
 			if (StopReason.REFUSAL.equals(stopReason.get())) {
-				send(emitter, "delta", new Delta("\n\nJe ne peux pas répondre à cette question. "
-						+ "Je peux en revanche vous parler de son parcours, de ses compétences ou de ses projets."));
+				status = "REFUSED";
+				String refusal = "\n\nJe ne peux pas répondre à cette question. "
+						+ "Je peux en revanche vous parler de son parcours, de ses compétences ou de ses projets.";
+				answer.append(refusal);
+				send(emitter, "delta", new Delta(refusal));
 			}
-			emitter.send(SseEmitter.event().name("done").data(new Done(true)));
+			ExchangeLog.Saved saved = record(request, answer.toString(), sourceTitles, status, started);
+			emitter.send(SseEmitter.event().name("done")
+					.data(new Done(true, saved == null ? null : saved.id(), saved == null ? null : saved.token())));
 			emitter.complete();
 		}
 		catch (RateLimitException e) {
+			record(request, null, sourceTitles, "ERROR", started);
 			fail(emitter, "L'assistant est très sollicité. Réessayez dans un instant.", e);
 		}
 		catch (AnthropicServiceException e) {
+			record(request, null, sourceTitles, "ERROR", started);
 			fail(emitter, "L'assistant est momentanément indisponible. Réessayez plus tard.", e);
 		}
 		catch (ClientAbortedException e) {
+			record(request, answer.toString(), sourceTitles, "ANSWERED", started);
 			log.debug("Client déconnecté pendant la réponse");
 		}
 		catch (Exception e) {
+			record(request, null, sourceTitles, "ERROR", started);
 			fail(emitter, "Une erreur est survenue. Réessayez plus tard.", e);
 		}
+	}
+
+	/** Journalise l'échange (historique admin) ; un échec d'écriture ne doit pas casser la réponse. */
+	private ExchangeLog.Saved record(ChatRequest request, String answer, List<String> sources, String status,
+			long startedNanos) {
+		try {
+			return exchanges.save(request.question().strip(), answer, sources, status, config.model(),
+					Duration.ofNanos(System.nanoTime() - startedNanos).toMillis());
+		}
+		catch (RuntimeException e) {
+			log.warn("Échange non journalisé : {}", e.toString());
+			return null;
+		}
+	}
+
+	/** Avis du visiteur sur une réponse (1 = utile, -1 = pas utile). */
+	boolean feedback(long id, String token, int value) {
+		return exchanges.feedback(id, token, value);
 	}
 
 	private MessageCreateParams buildParams(ChatRequest request, List<KnowledgeIndex.ScoredChunk> context) {
@@ -264,7 +301,7 @@ public class AssistantService {
 	record Delta(String text) {
 	}
 
-	record Done(boolean ok) {
+	record Done(boolean ok, Long id, String feedbackToken) {
 	}
 
 	record ErrorMessage(String message) {

@@ -197,3 +197,23 @@ export interface AnalyticsReport {
   devices: AnalyticsCount[];
   topPages: AnalyticsCount[];
 }
+
+export interface AssistantExchange {
+  id: number;
+  question: string;
+  answer: string | null;
+  sources: string[];
+  status: 'ANSWERED' | 'ERROR' | 'REFUSED';
+  feedback: 1 | -1 | null;
+  model: string | null;
+  durationMs: number | null;
+  createdAt: string;
+}
+
+export interface AssistantExchangePage {
+  items: AssistantExchange[];
+  stats: { total: number; up: number; down: number; errors: number; avgDurationMs: number };
+  page: number;
+  size: number;
+  totalItems: number;
+}

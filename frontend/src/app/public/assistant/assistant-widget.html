@@ -35,6 +35,17 @@
               {{ m.content }}
             }
           </div>
+          @if (m.role === 'assistant' && m.exchangeId && !m.streaming) {
+            <div class="feedback" role="group" aria-label="Cette réponse vous a-t-elle aidé ?">
+              @if (m.feedback) {
+                <span>Merci pour votre avis !</span>
+              } @else {
+                <span>Utile ?</span>
+                <button type="button" (click)="rate($index, 1)" aria-label="Réponse utile" title="Utile">👍</button>
+                <button type="button" (click)="rate($index, -1)" aria-label="Réponse pas utile" title="Pas utile">👎</button>
+              }
+            </div>
+          }
           @if (m.sources?.length && !m.streaming) {
             <div class="sources">
               <span>Sources :</span>

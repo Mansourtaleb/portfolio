@@ -7,7 +7,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /** Configuration applicative typée (préfixe {@code app}). */
 @ConfigurationProperties(prefix = "app")
-public record AppProperties(Security security, Assistant assistant) {
+public record AppProperties(Security security, Assistant assistant, Notifications notifications) {
+
+	public record Notifications(String emailTo, String emailFrom, String siteUrl) {
+
+		public boolean enabled() {
+			return emailTo != null && !emailTo.isBlank();
+		}
+	}
 
 	public record Security(
 			String jwtSecret,

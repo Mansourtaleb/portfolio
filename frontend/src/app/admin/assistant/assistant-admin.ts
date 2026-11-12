@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { AdminApiService } from '../../core/admin-api.service';
 import { AssistantStatus, SearchHit } from '../../core/models';
 import { Icon } from '../../shared/icon';
+import { AssistantHistory } from './assistant-history';
 
 /** Supervision du RAG : état de l'index, ré-indexation des embeddings et aperçu de la recherche. */
 @Component({
   selector: 'app-assistant-admin',
-  imports: [FormsModule, DatePipe, Icon],
+  imports: [FormsModule, DatePipe, Icon, AssistantHistory],
   template: `
     <h1 class="text-2xl font-bold flex items-center gap-2 mb-1"><app-icon name="sparkles" [size]="22" /> Assistant IA — RAG</h1>
     <p class="text-muted text-sm mb-6">L'index est reconstruit automatiquement à chaque modification du contenu. Le bouton force un recalcul complet des embeddings ONNX.</p>
@@ -54,6 +55,8 @@ import { Icon } from '../../shared/icon';
         }
       </ol>
     </section>
+
+    <app-assistant-history />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

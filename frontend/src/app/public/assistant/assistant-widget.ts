@@ -21,6 +21,10 @@ interface ChatMessage {
   sources?: ChatSource[];
   error?: boolean;
   streaming?: boolean;
+  /** Identifiant + jeton renvoyés par l'API pour pouvoir donner un avis. */
+  exchangeId?: number;
+  feedbackToken?: string;
+  feedback?: 1 | -1;
 }
 
 /**
@@ -166,10 +170,29 @@ export class AssistantWidget {
       case 'sources':
         this.patchLast((m) => ({ ...m, sources: data as ChatSource[] }));
         break;
+      case 'done':
+        if (data.id && data.feedbackToken) {
+          this.patchLast((m) => ({ ...m, exchangeId: data.id, feedbackToken: data.feedbackToken }));
+        }
+        break;
       case 'error':
         this.fail(data.message ?? 'Une erreur est survenue.');
         break;
     }
+  }
+
+  /** Avis du visiteur (👍 / 👎) sur une réponse ; un seul vote par réponse. */
+  protected rate(index: number, value: 1 | -1): void {
+    const message = this.messages()[index];
+    if (!message?.exchangeId || !message.feedbackToken || message.feedback) {
+      return;
+    }
+    this.messages.update((list) => list.map((m, i) => (i === index ? { ...m, feedback: value } : m)));
+    fetch('/api/public/assistant/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: message.exchangeId, token: message.feedbackToken, value }),
+    }).catch(() => undefined);
   }
 
   private fail(message: string): void {

@@ -20,6 +20,17 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  # E-mail (notification des messages de contact) : désactivé tant que SMTP_HOST est vide
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:true}
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 10000
   servlet:
     multipart:
       max-file-size: 5MB
@@ -42,12 +53,19 @@ springdoc:
     operations-sorter: method
 
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
         include: health
 
 app:
+  notifications:
+    email-to: ${NOTIFY_EMAIL:}
+    email-from: ${MAIL_FROM:portfolio@localhost}
+    site-url: ${SITE_URL:http://localhost:4200}
   security:
     jwt-secret: ${JWT_SECRET:}
     jwt-ttl: 8h

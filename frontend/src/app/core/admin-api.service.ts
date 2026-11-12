@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import {
   AnalyticsReport,
+  AssistantExchangePage,
   AssistantStatus,
   ContactMessage,
   CvInfo,
@@ -134,6 +135,14 @@ export class AdminApiService {
 
   reindex(): Observable<AssistantStatus> {
     return this.http.post<AssistantStatus>('/api/admin/assistant/reindex', null);
+  }
+
+  exchanges(page: number, filter: string): Observable<AssistantExchangePage> {
+    return this.http.get<AssistantExchangePage>('/api/admin/assistant/exchanges', { params: { page, size: 15, filter } });
+  }
+
+  deleteExchange(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/admin/assistant/exchanges/${id}`);
   }
 
   search(q: string): Observable<SearchHit[]> {
