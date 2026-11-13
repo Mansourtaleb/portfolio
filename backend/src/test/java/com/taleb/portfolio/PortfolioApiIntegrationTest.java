@@ -171,6 +171,58 @@ class PortfolioApiIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("Image d'aperçu de partage : PNG 1200×630 généré côté serveur")
+	void openGraphImage() throws Exception {
+		byte[] png = mvc.perform(get("/api/public/og.png"))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsByteArray();
+		assertThat(png).startsWith((byte) 0x89, (byte) 'P', (byte) 'N', (byte) 'G');
+		var image = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(png));
+		assertThat(image.getWidth()).isEqualTo(1200);
+		assertThat(image.getHeight()).isEqualTo(630);
+	}
+
+	@Test
+	@DisplayName("Sauvegarde JSON : export puis restauration rendent le contenu à l'identique")
+	void backupRoundTrip() throws Exception {
+		String backup = mvc.perform(admin(get("/api/admin/backup")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.app").value("portfolio-mmt"))
+				.andExpect(jsonPath("$.tables.project.length()").value(4))
+				.andReturn().getResponse().getContentAsString();
+
+		// On abîme le contenu, puis on restaure la sauvegarde.
+		jdbc.sql("update profile set headline = 'abîmé'").update();
+		jdbc.sql("delete from spoken_language").update();
+		mvc.perform(admin(post("/api/admin/backup/restore")).contentType(MediaType.APPLICATION_JSON).content(backup))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.spoken_language").value(3));
+		assertThat(jdbc.sql("select headline from profile").query(String.class).single()).startsWith("Ingénieur");
+		assertThat(jdbc.sql("select count(*) from spoken_language").query(Long.class).single()).isEqualTo(3);
+
+		// Un nouvel élément après restauration reçoit un identifiant libre (séquence recalée).
+		mvc.perform(admin(post("/api/admin/languages")).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"name\":\"Allemand\",\"level\":\"A1\"}"))
+				.andExpect(status().isCreated());
+
+		mvc.perform(admin(post("/api/admin/backup/restore")).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"app\":\"autre\",\"tables\":{}}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@DisplayName("Témoignages : section masquée par défaut, publiée avec le contenu")
+	void testimonials() throws Exception {
+		mvc.perform(admin(post("/api/admin/testimonials")).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"author\":\"Encadrant Test\",\"role\":\"Tech lead\",\"quote\":\"Très bon travail.\"}"))
+				.andExpect(status().isCreated());
+		publish();
+		mvc.perform(get("/api/public/portfolio"))
+				.andExpect(jsonPath("$.testimonials[0].author").value("Encadrant Test"))
+				.andExpect(jsonPath("$.settings.sections").value(not(hasItem("testimonials"))));
+	}
+
+	@Test
 	@DisplayName("Validation : erreurs par champ au format Problem Details")
 	void validationErrors() throws Exception {
 		mvc.perform(admin(post("/api/admin/projects")).contentType(MediaType.APPLICATION_JSON)

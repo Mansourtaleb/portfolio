@@ -29,7 +29,7 @@ export interface PublicSettings {
   contactFormEnabled: boolean;
 }
 
-export type SectionKey = 'about' | 'skills' | 'experience' | 'projects' | 'education' | 'contact';
+export type SectionKey = 'about' | 'skills' | 'experience' | 'projects' | 'education' | 'testimonials' | 'contact';
 
 export interface SiteSettings {
   siteTitle: string;
@@ -126,6 +126,16 @@ export interface Portfolio {
   education: Education[];
   certifications: Certification[];
   languages: SpokenLanguage[];
+  testimonials?: Testimonial[];
+}
+
+export interface Testimonial extends SectionItem {
+  author: string;
+  role: string | null;
+  company: string | null;
+  relationship: string | null;
+  quote: string;
+  linkedinUrl: string | null;
 }
 
 export interface CvInfo {

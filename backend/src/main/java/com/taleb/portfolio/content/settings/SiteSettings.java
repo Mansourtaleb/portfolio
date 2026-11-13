@@ -22,7 +22,7 @@ public class SiteSettings extends Timestamped {
 
 	/** Sections de la page d'accueil que l'admin peut réordonner ou masquer. */
 	public static final List<String> SECTION_KEYS = List.of("about", "skills", "experience", "projects", "education",
-			"contact");
+			"testimonials", "contact");
 
 	@Id
 	private Long id = SINGLETON_ID;

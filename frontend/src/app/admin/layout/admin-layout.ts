@@ -137,7 +137,7 @@ export class AdminLayout {
       title: 'Divers',
       links: [
         { path: '/admin/messages', label: 'Messages', icon: 'mail' },
-        { path: '/admin/compte', label: 'Mon compte', icon: 'lock' },
+        { path: '/admin/compte', label: 'Compte & sauvegarde', icon: 'lock' },
       ],
     },
   ];

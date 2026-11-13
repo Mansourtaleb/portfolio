@@ -39,6 +39,8 @@ import com.taleb.portfolio.content.project.ProjectDto;
 import com.taleb.portfolio.content.settings.SiteSettingsService;
 import com.taleb.portfolio.content.skill.SkillGroup;
 import com.taleb.portfolio.content.skill.SkillGroupDto;
+import com.taleb.portfolio.content.testimonial.Testimonial;
+import com.taleb.portfolio.content.testimonial.TestimonialDto;
 import com.taleb.portfolio.i18n.TranslationService;
 import com.taleb.portfolio.publicapi.PublicController.PortfolioView;
 import com.taleb.portfolio.publicapi.PublicController.PublicProfile;
@@ -61,7 +63,7 @@ public class PublicationService {
 	/** Tableaux de la vue → type de contenu des traductions. */
 	private static final Map<String, String> SECTION_ENTITIES = Map.of("skills", "skills", "experiences", "experiences",
 			"projects", "projects", "education", "education", "certifications", "certifications", "languages",
-			"languages");
+			"languages", "testimonials", "testimonials");
 
 	private static final Logger log = LoggerFactory.getLogger(PublicationService.class);
 
@@ -73,6 +75,7 @@ public class PublicationService {
 	private final SectionService<Education, EducationDto> education;
 	private final SectionService<Certification, CertificationDto> certifications;
 	private final SectionService<SpokenLanguage, SpokenLanguageDto> languages;
+	private final SectionService<Testimonial, TestimonialDto> testimonials;
 	private final TranslationService translations;
 	private final AssistantService assistant;
 	private final CvService cvService;
@@ -86,7 +89,8 @@ public class PublicationService {
 			SectionService<SkillGroup, SkillGroupDto> skills, SectionService<Experience, ExperienceDto> experiences,
 			SectionService<Project, ProjectDto> projects, SectionService<Education, EducationDto> education,
 			SectionService<Certification, CertificationDto> certifications,
-			SectionService<SpokenLanguage, SpokenLanguageDto> languages, TranslationService translations,
+			SectionService<SpokenLanguage, SpokenLanguageDto> languages,
+			SectionService<Testimonial, TestimonialDto> testimonials, TranslationService translations,
 			AssistantService assistant, CvService cvService, AvatarService avatarService, JdbcClient jdbc,
 			JsonMapper mapper, ApplicationEventPublisher events) {
 		this.profileService = profileService;
@@ -97,6 +101,7 @@ public class PublicationService {
 		this.education = education;
 		this.certifications = certifications;
 		this.languages = languages;
+		this.testimonials = testimonials;
 		this.translations = translations;
 		this.assistant = assistant;
 		this.cvService = cvService;
@@ -183,6 +188,7 @@ public class PublicationService {
 				certifications.findVisible(), languages.findVisible());
 		ObjectNode node = mapper.valueToTree(view);
 		node.put("lang", lang);
+		node.set("testimonials", mapper.valueToTree(testimonials.findVisible()));
 		if (!"fr".equals(lang)) {
 			apply((ObjectNode) node.get("profile"), translations.get("profile", 1L));
 			apply((ObjectNode) node.get("settings"), translations.get("settings", 1L));

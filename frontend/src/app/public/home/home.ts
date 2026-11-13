@@ -20,6 +20,7 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
   experience: 'Parcours',
   projects: 'Projets',
   education: 'Formation',
+  testimonials: 'Recommandations',
   contact: 'Contact',
 };
 

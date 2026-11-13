@@ -46,6 +46,14 @@
               }
             </div>
           }
+          @if ($last && m.role === 'assistant' && m.suggestions?.length && !m.streaming && !busy()) {
+            <div class="followups">
+              <span>{{ 'ai.followUps' | t }}</span>
+              @for (s of m.suggestions; track s) {
+                <button type="button" class="suggestion" (click)="ask(s)">{{ s }}</button>
+              }
+            </div>
+          }
           @if (m.sources?.length && !m.streaming) {
             <div class="sources">
               <span>{{ 'ai.sources' | t }}</span>

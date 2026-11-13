@@ -18,6 +18,7 @@ export const TRANSLATABLE: Record<string, string[]> = {
   education: ['degree', 'field', 'location', 'period', 'mention', 'description'],
   certifications: ['name', 'issuedOn'],
   languages: ['name', 'level'],
+  testimonials: ['role', 'relationship', 'quote'],
 };
 
 /**

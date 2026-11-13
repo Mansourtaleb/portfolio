@@ -319,6 +319,37 @@
           </section>
         }
 
+        <!-- ================= Recommandations ================= -->
+        @case ('testimonials') {
+          @if (d.testimonials?.length) {
+            <section id="testimonials" class="section">
+              <div class="container">
+                <p class="eyebrow mono">{{ 'nav.testimonials' | t }}</p>
+                <h2>{{ 'testimonials.title' | t }}</h2>
+                <div class="quotes">
+                  @for (q of d.testimonials; track q.id; let i = $index) {
+                    <figure class="card card-hover quote" [appReveal]="i * 80">
+                      <span class="mark" aria-hidden="true">“</span>
+                      <blockquote>{{ q.quote }}</blockquote>
+                      <figcaption>
+                        <app-avatar [name]="q.author" [size]="40" />
+                        <span>
+                          <strong>{{ q.author }}</strong>
+                          <span class="muted small">{{ q.role }}@if (q.company) { · {{ q.company }}}</span>
+                          @if (q.relationship) { <span class="faint small">{{ q.relationship }}</span> }
+                        </span>
+                        @if (q.linkedinUrl) {
+                          <a class="li" [href]="q.linkedinUrl" target="_blank" rel="noopener" [attr.aria-label]="'LinkedIn ' + q.author"><app-icon name="linkedin" [size]="18" /></a>
+                        }
+                      </figcaption>
+                    </figure>
+                  }
+                </div>
+              </div>
+            </section>
+          }
+        }
+
         <!-- ================= Contact ================= -->
         @case ('contact') {
           <section id="contact" class="section">

@@ -20,6 +20,7 @@ const SECTION_HINTS: Record<SectionKey, string> = {
   experience: 'Frise chronologique',
   projects: 'Cartes projets + filtre par techno',
   education: 'Diplômes, certifications, langues',
+  testimonials: 'Recommandations de tuteurs, encadrants, collègues',
   contact: 'Coordonnées + formulaire',
 };
 

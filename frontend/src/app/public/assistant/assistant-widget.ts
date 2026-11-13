@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   afterRenderEffect,
+  inject,
   input,
   signal,
   viewChild,
@@ -11,7 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { ChatSource } from '../../core/models';
-import { TranslatePipe } from '../../core/i18n';
+import { I18nService, TranslatePipe } from '../../core/i18n';
 import { Avatar } from '../../shared/avatar';
 import { Icon } from '../../shared/icon';
 import { RichTextPipe } from '../../shared/rich-text.pipe';
@@ -26,6 +27,8 @@ interface ChatMessage {
   exchangeId?: number;
   feedbackToken?: string;
   feedback?: 1 | -1;
+  /** Questions de relance proposées après la réponse. */
+  suggestions?: string[];
 }
 
 /**
@@ -47,6 +50,7 @@ export class AssistantWidget {
   readonly avatarUrl = input<string | null>(null);
 
   protected readonly open = signal(false);
+  private readonly i18n = inject(I18nService);
   protected readonly messages = signal<ChatMessage[]>([]);
   protected readonly busy = signal(false);
   protected question = '';
@@ -112,7 +116,7 @@ export class AssistantWidget {
       const response = await fetch('/api/public/assistant/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-        body: JSON.stringify({ question, history }),
+        body: JSON.stringify({ question, history, lang: this.i18n.lang() }),
       });
       if (!response.ok || !response.body) {
         let detail = "L'assistant n'est pas disponible pour le moment.";
@@ -172,9 +176,12 @@ export class AssistantWidget {
         this.patchLast((m) => ({ ...m, sources: data as ChatSource[] }));
         break;
       case 'done':
-        if (data.id && data.feedbackToken) {
-          this.patchLast((m) => ({ ...m, exchangeId: data.id, feedbackToken: data.feedbackToken }));
-        }
+        this.patchLast((m) => ({
+          ...m,
+          exchangeId: data.id ?? undefined,
+          feedbackToken: data.feedbackToken ?? undefined,
+          suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+        }));
         break;
       case 'error':
         this.fail(data.message ?? 'Une erreur est survenue.');

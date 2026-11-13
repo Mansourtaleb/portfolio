@@ -32,12 +32,13 @@ export class SeoService {
     this.tag('property', 'og:type', page.type ?? 'website');
     this.tag('property', 'og:url', url);
     this.tag('property', 'og:locale', 'fr_FR');
-    this.tag('name', 'twitter:card', page.image ? 'summary_large_image' : 'summary');
+    this.tag('name', 'twitter:card', 'summary_large_image');
     this.tag('name', 'twitter:title', page.title);
     this.tag('name', 'twitter:description', description);
-    if (page.image) {
-      this.tag('property', 'og:image', this.absolute(page.image));
-      this.tag('name', 'twitter:image', this.absolute(page.image));
+    const image = page.image ?? `/api/public/og.png?lang=${this.document.documentElement.lang === 'en' ? 'en' : 'fr'}`;
+    if (image) {
+      this.tag('property', 'og:image', this.absolute(image));
+      this.tag('name', 'twitter:image', this.absolute(image));
     } else {
       this.meta.removeTag("property='og:image'");
       this.meta.removeTag("name='twitter:image'");

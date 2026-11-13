@@ -31,7 +31,8 @@ public class TranslationService {
 					"architecture", "confidentialNote"),
 			"education", Set.of("degree", "field", "location", "period", "mention", "description"),
 			"certifications", Set.of("name", "issuedOn"),
-			"languages", Set.of("name", "level"));
+			"languages", Set.of("name", "level"),
+			"testimonials", Set.of("role", "relationship", "quote"));
 
 	private final JdbcClient jdbc;
 	private final ApplicationEventPublisher events;

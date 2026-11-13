@@ -27,6 +27,9 @@ import com.taleb.portfolio.content.project.ProjectRepository;
 import com.taleb.portfolio.content.skill.SkillGroup;
 import com.taleb.portfolio.content.skill.SkillGroupDto;
 import com.taleb.portfolio.content.skill.SkillGroupRepository;
+import com.taleb.portfolio.content.testimonial.Testimonial;
+import com.taleb.portfolio.content.testimonial.TestimonialDto;
+import com.taleb.portfolio.content.testimonial.TestimonialRepository;
 
 /** Un service CRUD générique par section « liste » de la vitrine. */
 @Configuration(proxyBeanMethods = false)
@@ -65,6 +68,12 @@ class ContentConfig {
 	SectionService<SpokenLanguage, SpokenLanguageDto> languageService(SpokenLanguageRepository repo,
 			ApplicationEventPublisher events) {
 		return new SectionService<>("languages", repo, SpokenLanguage::new, SpokenLanguageDto::from, events);
+	}
+
+	@Bean
+	SectionService<Testimonial, TestimonialDto> testimonialService(TestimonialRepository repo,
+			ApplicationEventPublisher events) {
+		return new SectionService<>("testimonials", repo, Testimonial::new, TestimonialDto::from, events);
 	}
 
 	@Bean

@@ -5,10 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
 import { ApiProblem } from '../../core/models';
 import { Icon } from '../../shared/icon';
+import { BackupCard } from './backup-card';
 
 @Component({
   selector: 'app-account',
-  imports: [FormsModule, Icon],
+  imports: [FormsModule, Icon, BackupCard],
   template: `
     <h1 class="text-2xl font-bold flex items-center gap-2 mb-6"><app-icon name="lock" [size]="22" /> Mon compte</h1>
     <form class="card max-w-md" (ngSubmit)="save()" #f="ngForm">
@@ -25,6 +26,7 @@ import { Icon } from '../../shared/icon';
       @if (notice(); as n) { <p class="alert mb-4" [class.alert-success]="n.ok" [class.alert-error]="!n.ok">{{ n.text }}</p> }
       <button class="btn btn-primary" type="submit" [disabled]="f.invalid || saving()">Enregistrer</button>
     </form>
+    <app-backup-card />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
