@@ -1,5 +1,4 @@
-# Base de données de développement.
-# Lancer : docker compose up -d db
+# Toute l'application : docker compose up -d --build
 services:
   db:
     image: postgres:17-alpine
@@ -10,7 +9,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-portfolio}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-portfolio}
     ports:
-      - "${DB_PORT:-5434}:5432"
+      - "${DB_PORT:-5434}:5432"   # accès depuis ton PC (DBeaver, dev local)
     volumes:
       - portfolio-db:/var/lib/postgresql/data
     healthcheck:
@@ -19,5 +18,33 @@ services:
       timeout: 3s
       retries: 10
 
+  api:
+    build: ./backend
+    image: portfolio-api:latest
+    container_name: portfolio-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: db          # nom du service = adresse dans le réseau Docker
+      DB_PORT: "5432"      # port INTERNE de PostgreSQL
+    volumes:
+      - models:/home/spring/.models
+    depends_on:
+      db:
+        condition: service_healthy   # attend que la base soit prête
+
+  web:
+    build: ./frontend
+    image: portfolio-web:latest
+    container_name: portfolio-web
+    restart: unless-stopped
+    ports:
+      - "8081:80"          # seul point d'entrée exposé sur ton PC
+    depends_on:
+      - api
+
 volumes:
   portfolio-db:
+  models:
+    external: true
+    name: portfolio-models   # volume de la leçon 2 (modèle IA déjà téléchargé)
