@@ -96,10 +96,32 @@ pipeline {
                 }
             }
         }
+
+        // CD : la nouvelle version part dans le cluster Kubernetes
+        stage('Déploiement Kubernetes') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig-kind', variable: 'KUBECONFIG')]) {
+                    // --reuse-values : garde les réglages existants (réplicas…), change seulement la version
+                    // --wait : n'est « réussi » que si les nouveaux pods deviennent Ready
+                    sh "helm upgrade portfolio helm/portfolio -n portfolio --reuse-values --set image.tag=${IMAGE_TAG} --wait --timeout 10m"
+                    sh 'helm history portfolio -n portfolio --max 3'
+                }
+            }
+        }
+
+        // Test de fumée : le site répond-il vraiment après le déploiement ?
+        stage('Smoke test') {
+            steps {
+                retry(5) {
+                    sleep 5
+                    sh 'curl -fsS -o /dev/null http://host.docker.internal:8088/api/public/portfolio'
+                }
+            }
+        }
     }
 
     post {
-        success { echo "✅ ${REGISTRY}/portfolio-api:${IMAGE_TAG} et portfolio-web:${IMAGE_TAG} publiées" }
+        success { echo "✅ Version ${IMAGE_TAG} publiée dans Nexus et déployée sur Kubernetes" }
         failure { echo "❌ Build en échec : regarde l'étape rouge" }
     }
 }

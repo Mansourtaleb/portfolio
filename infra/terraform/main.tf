@@ -27,18 +27,6 @@ resource "kubernetes_secret_v1" "app" {
   }
 }
 
-# Installation du chart Helm du dépôt
-resource "helm_release" "portfolio" {
-  name      = "portfolio"
-  chart     = "${path.module}/../../helm/portfolio"
-  namespace = kubernetes_namespace_v1.portfolio.metadata[0].name
-  wait      = true # attend que les pods soient prêts
-  timeout   = 600
-
-  set = [
-    { name = "image.tag", value = var.image_tag },
-    { name = "web.replicas", value = tostring(var.web_replicas) },
-  ]
-
-  depends_on = [kubernetes_secret_v1.app]
-}
+# La release Helm n'est plus gérée ici : c'est le pipeline Jenkins (CD) qui
+# déploie chaque nouvelle version avec « helm upgrade ».
+# Terraform = la plateforme (namespace, secrets) ; Jenkins = l'application.

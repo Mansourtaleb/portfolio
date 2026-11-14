@@ -1,7 +1,7 @@
-output "site_url" {
-  value = "http://localhost:8088"
+output "namespace" {
+  value = kubernetes_namespace_v1.portfolio.metadata[0].name
 }
 
-output "release" {
-  value = "${helm_release.portfolio.name} (rev. ${helm_release.portfolio.metadata.revision}, images ${var.image_tag})"
+output "secret" {
+  value = kubernetes_secret_v1.app.metadata[0].name
 }
