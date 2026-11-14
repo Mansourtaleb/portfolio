@@ -140,6 +140,7 @@ public class PublicationService {
 		return findProject(published(lang), slug);
 	}
 
+	@Transactional(readOnly = true)
 	public Optional<JsonNode> previewProject(String slug, String lang) {
 		return findProject(preview(lang), slug);
 	}
