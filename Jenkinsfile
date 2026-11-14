@@ -1,15 +1,15 @@
-// Pipeline CI du portfolio : build + tests back/front, puis images Docker.
+// Pipeline CI du portfolio : tests, qualité (SonarQube), images Docker.
 pipeline {
     agent any
 
     options {
-        buildDiscarder(logRotator(numToKeepStr: '10'))  // garde les 10 derniers builds
-        disableConcurrentBuilds()                       // un seul build à la fois
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
         timeout(time: 30, unit: 'MINUTES')
     }
 
     triggers {
-        pollSCM('H/5 * * * *')  // vérifie GitHub toutes les ~5 min (pas de webhook vers localhost)
+        pollSCM('H/5 * * * *')
     }
 
     environment {
@@ -17,23 +17,33 @@ pipeline {
     }
 
     stages {
-        stage('Backend : build + tests') {
+        stage('Backend : tests + analyse') {
             agent {
                 docker {
                     image 'eclipse-temurin:21-jdk'
-                    // cache Maven + accès Docker pour Testcontainers
                     args '-v maven-repo:/root/.m2 -v /var/run/docker.sock:/var/run/docker.sock -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal'
                     reuseNode true
                 }
             }
             steps {
                 dir('backend') {
-                    sh 'chmod +x mvnw && ./mvnw -B verify'
+                    withSonarQubeEnv('sonarqube') {
+                        // guillemets simples : le token est lu par le shell, jamais écrit en clair dans le script
+                        sh 'chmod +x mvnw && ./mvnw -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=portfolio-api -Dsonar.projectName=portfolio-api -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_AUTH_TOKEN'
+                    }
                 }
             }
             post {
                 always {
                     junit allowEmptyResults: true, testResults: 'backend/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
