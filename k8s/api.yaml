@@ -1,0 +1,63 @@
+# API Spring Boot : image publiée par Jenkins dans Nexus
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: portfolio
+spec:
+  selector:
+    app: api
+  ports:
+    - port: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: portfolio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: localhost:8083/portfolio-api:1.0.11
+          ports:
+            - containerPort: 8080
+          env:
+            - { name: DB_HOST, value: db }
+            - { name: DB_PORT, value: "5432" }
+            - { name: DB_NAME, value: portfolio }
+            - { name: DB_USERNAME, value: portfolio }
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: portfolio-secrets, key: DB_PASSWORD }
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef: { name: portfolio-secrets, key: JWT_SECRET }
+            - { name: ADMIN_USERNAME, value: admin }
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: portfolio-secrets, key: ADMIN_PASSWORD }
+            - { name: APP_ASSISTANT_EMBEDDINGS_ENABLED, value: "false" }
+            - { name: SITE_URL, value: "http://localhost:8088" }
+          # Sondes sur /actuator/health (ouvert sans authentification dans SecurityConfig)
+          startupProbe:             # jusqu'à 5 min pour démarrer avant toute autre sonde
+            httpGet: { path: /actuator/health, port: 8080 }
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:           # reçoit du trafic seulement quand la base est joignable
+            httpGet: { path: /actuator/health, port: 8080 }
+            periodSeconds: 10
+          livenessProbe:            # redémarré s'il ne répond plus
+            httpGet: { path: /actuator/health, port: 8080 }
+            periodSeconds: 20
+          resources:
+            requests: { memory: 512Mi, cpu: 250m }
+            limits:   { memory: 1Gi }
