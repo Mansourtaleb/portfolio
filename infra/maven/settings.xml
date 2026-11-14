@@ -1,0 +1,10 @@
+<settings>
+  <mirrors>
+    <!-- Toutes les dépendances passent par le proxy Nexus (cache local) -->
+    <mirror>
+      <id>nexus</id>
+      <mirrorOf>*</mirrorOf>
+      <url>http://host.docker.internal:8082/repository/maven-public/</url>
+    </mirror>
+  </mirrors>
+</settings>

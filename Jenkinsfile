@@ -1,4 +1,4 @@
-// Pipeline CI du portfolio : tests, qualité (SonarQube), images Docker.
+// Pipeline CI : tests, qualité (SonarQube), images (build once), publication Nexus.
 pipeline {
     agent any
 
@@ -14,6 +14,7 @@ pipeline {
 
     environment {
         IMAGE_TAG = "1.0.${env.BUILD_NUMBER}"
+        REGISTRY  = 'localhost:8083'
     }
 
     stages {
@@ -28,8 +29,7 @@ pipeline {
             steps {
                 dir('backend') {
                     withSonarQubeEnv('sonarqube') {
-                        // guillemets simples : le token est lu par le shell, jamais écrit en clair dans le script
-                        sh 'chmod +x mvnw && ./mvnw -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=portfolio-api -Dsonar.projectName=portfolio-api -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_AUTH_TOKEN'
+                        sh 'chmod +x mvnw && ./mvnw -B -s ../infra/maven/settings.xml verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=portfolio-api -Dsonar.projectName=portfolio-api -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_AUTH_TOKEN'
                     }
                 }
             }
@@ -65,14 +65,28 @@ pipeline {
 
         stage('Images Docker') {
             steps {
-                sh "docker build -t portfolio-api:${IMAGE_TAG} backend"
-                sh "docker build -t portfolio-web:${IMAGE_TAG} frontend"
+                sh "docker build -f backend/Dockerfile.ci -t ${REGISTRY}/portfolio-api:${IMAGE_TAG} backend/target"
+                sh 'cp frontend/nginx.conf frontend/dist/frontend/nginx.conf'
+                sh "docker build -f frontend/Dockerfile.ci -t ${REGISTRY}/portfolio-web:${IMAGE_TAG} frontend/dist/frontend"
+            }
+        }
+
+        stage('Publication Nexus') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'nexus-docker', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                    sh 'echo "$NEXUS_PASS" | docker login $REGISTRY -u "$NEXUS_USER" --password-stdin'
+                    sh "docker push ${REGISTRY}/portfolio-api:${IMAGE_TAG}"
+                    sh "docker push ${REGISTRY}/portfolio-web:${IMAGE_TAG}"
+                }
+            }
+            post {
+                always { sh 'docker logout $REGISTRY || true' }
             }
         }
     }
 
     post {
-        success { echo "✅ Build ${IMAGE_TAG} OK" }
+        success { echo "✅ ${REGISTRY}/portfolio-api:${IMAGE_TAG} et portfolio-web:${IMAGE_TAG} publiées" }
         failure { echo "❌ Build en échec : regarde l'étape rouge" }
     }
 }

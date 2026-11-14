@@ -1,0 +1,11 @@
+# Image CI : reprend le jar déjà construit et testé par Jenkins (build once)
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+RUN useradd --system --create-home spring && mkdir -p /home/spring/.models && chown spring:spring /home/spring/.models
+USER spring
+COPY *.jar app.jar
+ENV EMBEDDINGS_DIR=/home/spring/.models
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s \
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
