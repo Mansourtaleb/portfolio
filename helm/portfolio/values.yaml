@@ -1,0 +1,29 @@
+# Valeurs par défaut : surchargeables avec --set ou -f autre-fichier.yaml
+image:
+  registry: localhost:8083
+  tag: "1.0.11"
+
+secretName: portfolio-secrets   # Secret créé hors du chart (jamais dans Git)
+
+web:
+  replicas: 2
+  nodePort: 30080
+  resources:
+    requests: { memory: 32Mi, cpu: 50m }
+    limits:   { memory: 128Mi }
+
+api:
+  replicas: 1
+  siteUrl: http://localhost:8088
+  resources:
+    requests: { memory: 512Mi, cpu: 250m }
+    limits:   { memory: 1Gi }
+
+db:
+  image: postgres:17-alpine
+  name: portfolio
+  user: portfolio
+  storage: 1Gi
+  resources:
+    requests: { memory: 128Mi, cpu: 100m }
+    limits:   { memory: 512Mi }

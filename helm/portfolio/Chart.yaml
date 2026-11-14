@@ -1,0 +1,6 @@
+apiVersion: v2
+name: portfolio
+description: Portfolio Full-Stack (Angular + Spring Boot + PostgreSQL)
+type: application
+version: 0.1.0          # version du chart (le paquet de déploiement)
+appVersion: "1.0.11"    # version de l'application déployée par défaut
