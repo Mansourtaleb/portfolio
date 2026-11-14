@@ -46,14 +46,14 @@ pipeline {
         stage('Frontend : build') {
             agent {
                 docker {
-                    image 'node:22-alpine'
+                    image 'node:24-alpine'  // embarque npm 11 : plus besoin d'installer npm à chaque build
                     args '-v npm-cache:/root/.npm'
                     reuseNode true
                 }
             }
             steps {
                 dir('frontend') {
-                    sh 'npm install -g npm@11.6.2 && npm ci && npx ng build --configuration production'
+                    sh 'npm ci --prefer-offline --no-audit --no-fund && npx ng build --configuration production'
                 }
             }
         }
