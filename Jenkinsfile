@@ -18,6 +18,9 @@ pipeline {
     }
 
     stages {
+      // Backend et frontend sont indépendants : on les exécute en même temps
+      stage('Build') {
+       parallel {
         stage('Backend : tests + analyse') {
             agent {
                 docker {
@@ -40,14 +43,6 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
         stage('Frontend : build') {
             agent {
                 docker {
@@ -59,6 +54,16 @@ pipeline {
             steps {
                 dir('frontend') {
                     sh 'npm install -g npm@11.6.2 && npm ci && npx ng build --configuration production'
+                }
+            }
+        }
+       }
+      }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
