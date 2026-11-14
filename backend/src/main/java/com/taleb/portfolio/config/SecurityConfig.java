@@ -35,6 +35,7 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
  */
 @Configuration(proxyBeanMethods = false)
 class SecurityConfig {
+	private static final SecureRandom RANDOM = new SecureRandom();
 
 	private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 	private static final int MIN_SECRET_BYTES = 32;
@@ -68,7 +69,7 @@ class SecurityConfig {
 		if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < MIN_SECRET_BYTES) {
 			log.warn("JWT_SECRET absent ou trop court : clé aléatoire générée (les sessions admin expirent au redémarrage).");
 			bytes = new byte[MIN_SECRET_BYTES];
-			new SecureRandom().nextBytes(bytes);
+			RANDOM.nextBytes(bytes);
 		}
 		else {
 			bytes = secret.getBytes(StandardCharsets.UTF_8);

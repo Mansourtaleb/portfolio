@@ -30,6 +30,7 @@ import jakarta.servlet.http.HttpServletRequest;
  */
 @Service
 public class AnalyticsService {
+	private static final SecureRandom RANDOM = new SecureRandom();
 
 	public enum EventType {
 		PAGE_VIEW, PROJECT_VIEW, CV_DOWNLOAD, ASSISTANT_QUESTION, CONTACT_MESSAGE
@@ -222,7 +223,7 @@ public class AnalyticsService {
 
 		static DailySalt forToday() {
 			byte[] bytes = new byte[32];
-			new SecureRandom().nextBytes(bytes);
+			RANDOM.nextBytes(bytes);
 			return new DailySalt(LocalDate.now(ZONE), bytes);
 		}
 	}

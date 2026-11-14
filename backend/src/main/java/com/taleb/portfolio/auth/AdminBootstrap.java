@@ -19,6 +19,7 @@ import com.taleb.portfolio.config.AppProperties;
  */
 @Component
 class AdminBootstrap implements ApplicationRunner {
+	private static final SecureRandom RANDOM = new SecureRandom();
 
 	private static final Logger log = LoggerFactory.getLogger(AdminBootstrap.class);
 	static final int MIN_PASSWORD_LENGTH = 10;
@@ -45,7 +46,7 @@ class AdminBootstrap implements ApplicationRunner {
 		boolean generated = password == null || password.isBlank();
 		if (generated) {
 			byte[] bytes = new byte[18];
-			new SecureRandom().nextBytes(bytes);
+			RANDOM.nextBytes(bytes);
 			password = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
 		}
 		else if (password.length() < MIN_PASSWORD_LENGTH) {
