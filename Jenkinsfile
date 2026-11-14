@@ -47,7 +47,7 @@ pipeline {
         stage('Frontend : build') {
             agent {
                 docker {
-                    image 'node:24-alpine'  // embarque npm 11 : plus besoin d'installer npm à chaque build
+                    image 'portfolio-node-agent:22-npm11.6.2'  // agent préparé : versions figées
                     args '-v npm-cache:/root/.npm'
                     reuseNode true
                 }
