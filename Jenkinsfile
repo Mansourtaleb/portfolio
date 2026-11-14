@@ -20,6 +20,7 @@ pipeline {
     stages {
       // Backend et frontend sont indépendants : on les exécute en même temps
       stage('Build') {
+       failFast true   // si une branche échoue, on arrête l'autre tout de suite
        parallel {
         stage('Backend : tests + analyse') {
             agent {
@@ -79,13 +80,20 @@ pipeline {
         stage('Publication Nexus') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'nexus-docker', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                    sh 'echo "$NEXUS_PASS" | docker login $REGISTRY -u "$NEXUS_USER" --password-stdin'
-                    sh "docker push ${REGISTRY}/portfolio-api:${IMAGE_TAG}"
-                    sh "docker push ${REGISTRY}/portfolio-web:${IMAGE_TAG}"
+                    // 3 tentatives : absorbe un Nexus lent ou un raté réseau ponctuel
+                    retry(3) {
+                        sh 'echo "$NEXUS_PASS" | docker login $REGISTRY -u "$NEXUS_USER" --password-stdin'
+                        sh "docker push ${REGISTRY}/portfolio-api:${IMAGE_TAG}"
+                        sh "docker push ${REGISTRY}/portfolio-web:${IMAGE_TAG}"
+                    }
                 }
             }
             post {
-                always { sh 'docker logout $REGISTRY || true' }
+                always {
+                    sh 'docker logout $REGISTRY || true'
+                    // les images sont dans Nexus : on libère le disque local
+                    sh "docker rmi ${REGISTRY}/portfolio-api:${IMAGE_TAG} ${REGISTRY}/portfolio-web:${IMAGE_TAG} || true"
+                }
             }
         }
     }
