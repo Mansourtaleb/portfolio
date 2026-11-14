@@ -7,7 +7,8 @@ spec:
   selector:
     app: api
   ports:
-    - port: 8080
+    - name: http           # nommé : le ServiceMonitor s'y réfère
+      port: 8080
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -46,6 +47,11 @@ spec:
                 secretKeyRef: { name: {{ .Values.secretName }}, key: ADMIN_PASSWORD }
             - { name: APP_ASSISTANT_EMBEDDINGS_ENABLED, value: "false" }
             - { name: SITE_URL, value: {{ .Values.api.siteUrl | quote }} }
+            {{- if .Values.monitoring.enabled }}
+            # Expose /actuator/prometheus dans le cluster uniquement
+            - { name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE, value: "health,prometheus" }
+            - { name: MANAGEMENT_METRICS_TAGS_APPLICATION, value: "portfolio-api" }
+            {{- end }}
           startupProbe:
             httpGet: { path: /actuator/health, port: 8080 }
             periodSeconds: 10

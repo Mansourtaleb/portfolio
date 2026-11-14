@@ -101,9 +101,9 @@ pipeline {
         stage('Déploiement Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-kind', variable: 'KUBECONFIG')]) {
-                    // --reuse-values : garde les réglages existants (réplicas…), change seulement la version
+                    // --reset-then-reuse-values : nouvelles valeurs par défaut du chart + réglages déjà posés (réplicas…)
                     // --wait : n'est « réussi » que si les nouveaux pods deviennent Ready
-                    sh "helm upgrade portfolio helm/portfolio -n portfolio --reuse-values --set image.tag=${IMAGE_TAG} --wait --timeout 10m"
+                    sh "helm upgrade portfolio helm/portfolio -n portfolio --reset-then-reuse-values --set image.tag=${IMAGE_TAG} --wait --timeout 10m"
                     sh 'helm history portfolio -n portfolio --max 3'
                 }
             }

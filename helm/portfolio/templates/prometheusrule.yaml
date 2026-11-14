@@ -1,0 +1,33 @@
+{{- if .Values.monitoring.enabled }}
+# Règles d'alerte évaluées en continu par Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: portfolio-alerts
+  namespace: {{ .Release.Namespace }}
+spec:
+  groups:
+    - name: portfolio-api
+      rules:
+        - alert: PortfolioApiDown
+          expr: up{namespace="{{ .Release.Namespace }}", service="api"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "L'API du portfolio ne répond plus depuis 1 minute"
+        - alert: PortfolioApiErreurs5xx
+          expr: sum(rate(http_server_requests_seconds_count{namespace="{{ .Release.Namespace }}", status=~"5.."}[5m])) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Plus de 0,1 erreur 5xx par seconde sur l'API"
+        - alert: PortfolioApiMemoireHaute
+          expr: sum(jvm_memory_used_bytes{namespace="{{ .Release.Namespace }}", area="heap"}) / sum(jvm_memory_max_bytes{namespace="{{ .Release.Namespace }}", area="heap"}) > 0.9
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Heap JVM de l'API au-dessus de 90 %"
+{{- end }}

@@ -1,0 +1,16 @@
+{{- if .Values.monitoring.enabled }}
+# Dit à Prometheus (opérateur) de collecter les métriques de l'API toutes les 15 s
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: api
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: api
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 15s
+{{- end }}
