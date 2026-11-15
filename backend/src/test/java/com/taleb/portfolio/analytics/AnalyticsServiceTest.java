@@ -38,7 +38,9 @@ class AnalyticsServiceTest {
 
 		assertEquals(a, service.visitorHash("41.226.10.1", CHROME));
 		assertNotEquals(a, service.visitorHash("41.226.10.2", CHROME));
-		assertEquals(16, a.length());
-		assertFalse(a.contains("41"), "le hachage ne doit pas laisser apparaître l'IP");
+		// 16 caractères hexadécimaux (8 octets de SHA-256) : jamais l'IP en clair.
+		// (Ne pas tester l'absence de « 41 » : un hash aléatoire contient « 41 » environ 1 fois sur 17 → test instable.)
+		assertTrue(a.matches("[0-9a-f]{16}"), "le hachage doit être 16 caractères hexadécimaux");
+		assertFalse(a.contains("41.226"), "le hachage ne doit pas laisser apparaître l'IP");
 	}
 }
