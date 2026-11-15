@@ -1,0 +1,21 @@
+# L'application « portfolio » telle que décrite dans Git : Argo CD fait converger le cluster vers cet état.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: portfolio
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Mansourtaleb/portfolio.git   # dépôt public : aucun identifiant nécessaire en lecture
+    targetRevision: main
+    path: helm/portfolio
+    helm:
+      releaseName: portfolio     # mêmes noms de ressources que la release Helm existante : Argo CD les adopte
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: portfolio         # créé par Terraform (avec le Secret), donc pas de CreateNamespace
+  syncPolicy:
+    automated:
+      prune: true                # supprime du cluster ce qui a été retiré de Git
+      selfHeal: true             # annule toute modification manuelle (drift)

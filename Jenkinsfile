@@ -1,4 +1,4 @@
-// Pipeline CI : tests, qualité (SonarQube), images (build once), publication Nexus.
+// Pipeline CI/CD GitOps : tests, qualité (SonarQube), images (build once), Nexus, version écrite dans Git → Argo CD déploie.
 pipeline {
     agent any
 
@@ -18,8 +18,22 @@ pipeline {
     }
 
     stages {
+      // Garde anti-boucle : le commit « deploy: … [skip ci] » écrit par Jenkins ne relance pas tout le pipeline
+      stage('Garde GitOps') {
+        steps {
+          script {
+            if (sh(script: 'git log -1 --pretty=%B', returnStdout: true).contains('[skip ci]')) {
+              env.SKIP_CI = 'true'
+              currentBuild.result = 'NOT_BUILT'
+              echo 'Commit de déploiement écrit par Jenkins : rien à construire.'
+            }
+          }
+        }
+      }
+
       // Backend et frontend sont indépendants : on les exécute en même temps
       stage('Build') {
+       when { expression { env.SKIP_CI != 'true' } }
        failFast true   // si une branche échoue, on arrête l'autre tout de suite
        parallel {
         stage('Backend : tests + analyse') {
@@ -62,6 +76,7 @@ pipeline {
       }
 
         stage('Quality Gate') {
+            when { expression { env.SKIP_CI != 'true' } }
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
@@ -70,6 +85,7 @@ pipeline {
         }
 
         stage('Images Docker') {
+            when { expression { env.SKIP_CI != 'true' } }
             steps {
                 sh "docker build -f backend/Dockerfile.ci -t ${REGISTRY}/portfolio-api:${IMAGE_TAG} backend/target"
                 sh 'cp frontend/nginx.conf frontend/dist/frontend/nginx.conf'
@@ -78,6 +94,7 @@ pipeline {
         }
 
         stage('Publication Nexus') {
+            when { expression { env.SKIP_CI != 'true' } }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'nexus-docker', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                     // 3 tentatives : absorbe un Nexus lent ou un raté réseau ponctuel
@@ -97,20 +114,46 @@ pipeline {
             }
         }
 
-        // CD : la nouvelle version part dans le cluster Kubernetes
-        stage('Déploiement Kubernetes') {
+        // CD GitOps : Jenkins ne touche plus au cluster, il écrit la nouvelle version dans Git.
+        // Argo CD voit le commit et synchronise le cluster.
+        stage('GitOps : version dans Git') {
+            when { expression { env.SKIP_CI != 'true' } }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'github-push', usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
+                    sh '''
+                        git config user.name "Jenkins CI"
+                        git config user.email "jenkins@portfolio.local"
+                        git fetch origin main
+                        git checkout -B main origin/main
+                        sed -i "s/^  tag: .*/  tag: \\"${IMAGE_TAG}\\"   # mis à jour par Jenkins à chaque build (GitOps)/" helm/portfolio/values.yaml
+                        git add helm/portfolio/values.yaml
+                        git commit -m "deploy: portfolio ${IMAGE_TAG} [skip ci]"
+                        # le jeton est masqué dans les logs Jenkins et n'est pas enregistré dans .git/config
+                        git push "https://${GH_USER}:${GH_TOKEN}@github.com/Mansourtaleb/portfolio.git" HEAD:main
+                    '''
+                }
+            }
+        }
+
+        // Jenkins attend qu'Argo CD ait déployé la nouvelle version (lecture seule sur le cluster)
+        stage('Attente Argo CD') {
+            when { expression { env.SKIP_CI != 'true' } }
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-kind', variable: 'KUBECONFIG')]) {
-                    // --reset-then-reuse-values : nouvelles valeurs par défaut du chart + réglages déjà posés (réplicas…)
-                    // --wait : n'est « réussi » que si les nouveaux pods deviennent Ready
-                    sh "helm upgrade portfolio helm/portfolio -n portfolio --reset-then-reuse-values --set image.tag=${IMAGE_TAG} --wait --timeout 10m"
-                    sh 'helm history portfolio -n portfolio --max 3'
+                    timeout(time: 10, unit: 'MINUTES') {
+                        waitUntil(initialRecurrencePeriod: 15000) {
+                            sh(script: "kubectl get deploy api web -n portfolio -o jsonpath='{.items[*].spec.template.spec.containers[0].image}' | tr ' ' '\\n' | grep -c ':${IMAGE_TAG}' | grep -q 2", returnStatus: true) == 0
+                        }
+                    }
+                    sh 'kubectl rollout status deploy/api -n portfolio --timeout=5m'
+                    sh 'kubectl rollout status deploy/web -n portfolio --timeout=5m'
                 }
             }
         }
 
         // Test de fumée : le site répond-il vraiment après le déploiement ?
         stage('Smoke test') {
+            when { expression { env.SKIP_CI != 'true' } }
             steps {
                 retry(5) {
                     sleep 5
@@ -121,7 +164,7 @@ pipeline {
     }
 
     post {
-        success { echo "✅ Version ${IMAGE_TAG} publiée dans Nexus et déployée sur Kubernetes" }
+        success { echo "✅ Version ${IMAGE_TAG} publiée dans Nexus, écrite dans Git et déployée par Argo CD" }
         failure { echo "❌ Build en échec : regarde l'étape rouge" }
     }
 }

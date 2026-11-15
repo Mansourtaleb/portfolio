@@ -7,5 +7,8 @@ COPY --from=docker:27-cli /usr/local/bin/docker /usr/local/bin/docker
 ARG HELM_VERSION
 RUN curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" | tar -xz -C /tmp \
     && mv /tmp/linux-amd64/helm /usr/local/bin/helm && rm -rf /tmp/linux-amd64
+# kubectl : Jenkins lit l'état du cluster pour attendre la synchronisation d'Argo CD
+RUN curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+    && chmod +x /usr/local/bin/kubectl
 USER jenkins
 RUN jenkins-plugin-cli --plugins git workflow-aggregator docker-workflow pipeline-stage-view junit

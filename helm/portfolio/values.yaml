@@ -1,7 +1,7 @@
 # Valeurs par défaut : surchargeables avec --set ou -f autre-fichier.yaml
 image:
   registry: localhost:8083
-  tag: "1.0.11"
+  tag: "1.0.20"   # mis à jour par Jenkins à chaque build (GitOps)
 
 secretName: portfolio-secrets   # Secret créé hors du chart (jamais dans Git)
 
