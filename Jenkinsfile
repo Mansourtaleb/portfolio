@@ -27,10 +27,14 @@ pipeline {
       stage('Garde GitOps') {
         steps {
           script {
-            // On ne saute que les builds AUTOMATIQUES (pollSCM) sur un commit [skip ci].
-            // Un build lancé à la main par un humain s'exécute toujours.
+            // On ne saute que les builds AUTOMATIQUES (pollSCM) dont TOUS les nouveaux commits sont [skip ci].
+            // - Un build lancé à la main par un humain s'exécute toujours.
+            // - Si un commit de développeur est arrivé avec un commit de Jenkins par-dessus, on construit.
             def lanceParUnHumain = !currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').isEmpty()
-            if (!lanceParUnHumain && sh(script: 'git log -1 --pretty=%B', returnStdout: true).contains('[skip ci]')) {
+            def plage = env.GIT_PREVIOUS_COMMIT ? "${env.GIT_PREVIOUS_COMMIT}..HEAD" : '-1 HEAD'
+            // nombre de nouveaux commits SANS [skip ci]
+            def commitsDev = sh(script: "git log --format=%h --invert-grep --grep='\\[skip ci\\]' ${plage} | wc -l", returnStdout: true).trim()
+            if (!lanceParUnHumain && commitsDev == '0') {
               env.SKIP_CI = 'true'
               currentBuild.result = 'NOT_BUILT'
               echo 'Commit de déploiement écrit par Jenkins : rien à construire.'
