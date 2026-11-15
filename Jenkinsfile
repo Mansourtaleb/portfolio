@@ -12,6 +12,11 @@ pipeline {
         pollSCM('H/5 * * * *')
     }
 
+    parameters {
+        // Interrupteur de « chaos » : fait échouer le smoke test pour vérifier le rollback automatique
+        booleanParam(name: 'SIMULER_ECHEC', defaultValue: false, description: 'Faire échouer le smoke test (test du rollback automatique)')
+    }
+
     environment {
         IMAGE_TAG = "1.0.${env.BUILD_NUMBER}"
         REGISTRY  = 'localhost:8083'
@@ -131,6 +136,8 @@ pipeline {
                         # le jeton est masqué dans les logs Jenkins et n'est pas enregistré dans .git/config
                         git push "https://${GH_USER}:${GH_TOKEN}@github.com/Mansourtaleb/portfolio.git" HEAD:main
                     '''
+                    // on retient le commit de déploiement : c'est lui qu'on annulera si la suite échoue
+                    script { env.DEPLOY_SHA = sh(script: 'git rev-parse HEAD', returnStdout: true).trim() }
                 }
             }
         }
@@ -158,9 +165,12 @@ pipeline {
         stage('Smoke test') {
             when { expression { env.SKIP_CI != 'true' } }
             steps {
-                retry(5) {
-                    sleep 5
-                    sh 'curl -fsS -o /dev/null http://host.docker.internal:8088/api/public/portfolio'
+                script {
+                    def chemin = params.SIMULER_ECHEC ? '/api/public/n-existe-pas' : '/api/public/portfolio'
+                    retry(5) {
+                        sleep 5
+                        sh "curl -fsS -o /dev/null http://host.docker.internal:8088${chemin}"
+                    }
                 }
             }
         }
@@ -169,5 +179,23 @@ pipeline {
     post {
         success { echo "✅ Version ${IMAGE_TAG} publiée dans Nexus, écrite dans Git et déployée par Argo CD" }
         failure { echo "❌ Build en échec : regarde l'étape rouge" }
+        // Rollback automatique : si la version a été écrite dans Git mais que le déploiement
+        // ou le smoke test échoue, on annule le commit → Argo CD remet la version précédente.
+        unsuccessful {
+            script {
+                if (env.DEPLOY_SHA) {
+                    echo "↩️ Rollback automatique : annulation du commit ${env.DEPLOY_SHA}"
+                    withCredentials([usernamePassword(credentialsId: 'github-push', usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
+                        // le message du revert reprend « … [skip ci] » : la garde empêche un nouveau build
+                        sh '''
+                            git fetch origin main
+                            git checkout -B main origin/main
+                            git revert --no-edit "$DEPLOY_SHA"
+                            git push "https://${GH_USER}:${GH_TOKEN}@github.com/Mansourtaleb/portfolio.git" HEAD:main
+                        '''
+                    }
+                }
+            }
+        }
     }
 }
