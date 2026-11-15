@@ -141,8 +141,11 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-kind', variable: 'KUBECONFIG')]) {
                     timeout(time: 10, unit: 'MINUTES') {
-                        waitUntil(initialRecurrencePeriod: 15000) {
-                            sh(script: "kubectl get deploy api web -n portfolio -o jsonpath='{.items[*].spec.template.spec.containers[0].image}' | tr ' ' '\\n' | grep -c ':${IMAGE_TAG}' | grep -q 2", returnStatus: true) == 0
+                        // script { } : une expression Groovy (== 0) n'est pas une « étape » déclarative
+                        script {
+                            waitUntil(initialRecurrencePeriod: 15000) {
+                                sh(script: "kubectl get deploy api web -n portfolio -o jsonpath='{.items[*].spec.template.spec.containers[0].image}' | tr ' ' '\\n' | grep -c ':${IMAGE_TAG}' | grep -q 2", returnStatus: true) == 0
+                            }
                         }
                     }
                     sh 'kubectl rollout status deploy/api -n portfolio --timeout=5m'
