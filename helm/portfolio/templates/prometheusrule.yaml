@@ -10,7 +10,10 @@ spec:
     - name: portfolio-api
       rules:
         - alert: PortfolioApiDown
-          expr: up{namespace="{{ .Release.Namespace }}", service="api"} == 0
+          # == 0 : pod présent mais ne répond plus ; absent() : plus aucun pod (série disparue)
+          expr: |
+            (sum(up{namespace="{{ .Release.Namespace }}", service="api"}) == 0)
+            or absent(up{namespace="{{ .Release.Namespace }}", service="api"})
           for: 1m
           labels:
             severity: critical
