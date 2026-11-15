@@ -76,7 +76,17 @@ pipeline {
             }
             steps {
                 dir('frontend') {
-                    sh 'npm ci --prefer-offline --no-audit --no-fund && npx ng build --configuration production'
+                    // Cache : on ne réinstalle les paquets que si package-lock.json a changé
+                    sh '''
+                        H=$(sha256sum package-lock.json | cut -d' ' -f1)
+                        if [ -f node_modules/.lock-hash ] && [ "$(cat node_modules/.lock-hash)" = "$H" ]; then
+                            echo "package-lock.json inchangé : node_modules réutilisé (npm ci sauté)"
+                        else
+                            npm ci --prefer-offline --no-audit --no-fund
+                            echo "$H" > node_modules/.lock-hash
+                        fi
+                        npx ng build --configuration production
+                    '''
                 }
             }
         }
@@ -150,6 +160,8 @@ pipeline {
             when { expression { env.SKIP_CI != 'true' } }
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-kind', variable: 'KUBECONFIG')]) {
+                    // Demande à Argo CD de relire Git tout de suite (au lieu d'attendre son cycle de 60 s)
+                    sh 'kubectl annotate application portfolio -n argocd argocd.argoproj.io/refresh=normal --overwrite'
                     timeout(time: 10, unit: 'MINUTES') {
                         // script { } : une expression Groovy (== 0) n'est pas une « étape » déclarative
                         script {
@@ -196,6 +208,10 @@ pipeline {
                             git revert --no-edit "$DEPLOY_SHA"
                             git push "https://${GH_USER}:${GH_TOKEN}@github.com/Mansourtaleb/portfolio.git" HEAD:main
                         '''
+                    }
+                    // le retour arrière est appliqué tout de suite par Argo CD
+                    withCredentials([file(credentialsId: 'kubeconfig-kind', variable: 'KUBECONFIG')]) {
+                        sh 'kubectl annotate application portfolio -n argocd argocd.argoproj.io/refresh=normal --overwrite || true'
                     }
                 }
             }
