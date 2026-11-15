@@ -1,0 +1,42 @@
+# Loki en mode « single binary » : un seul pod, stockage sur disque local (poste de 16 Go)
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false             # un seul « tenant » : pas d'en-tête X-Scope-OrgID à gérer
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index: { prefix: loki_index_, period: 24h }
+  limits_config:
+    retention_period: 48h         # on garde 2 jours de logs
+  compactor:
+    retention_enabled: true       # c'est le compacteur qui supprime les logs expirés
+    delete_request_store: filesystem
+
+singleBinary:
+  replicas: 1
+  persistence:
+    size: 2Gi
+  resources:
+    requests: { memory: 256Mi, cpu: 100m }
+    limits:   { memory: 512Mi }
+
+# Mode microservices (lecture / écriture / backend séparés) désactivé
+read:    { replicas: 0 }
+write:   { replicas: 0 }
+backend: { replicas: 0 }
+
+# Composants utiles en production, superflus ici
+gateway:      { enabled: false }
+chunksCache:  { enabled: false }
+resultsCache: { enabled: false }
+lokiCanary:   { enabled: false }
+test:         { enabled: false }
+minio:        { enabled: false }
