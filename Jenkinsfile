@@ -27,7 +27,10 @@ pipeline {
       stage('Garde GitOps') {
         steps {
           script {
-            if (sh(script: 'git log -1 --pretty=%B', returnStdout: true).contains('[skip ci]')) {
+            // On ne saute que les builds AUTOMATIQUES (pollSCM) sur un commit [skip ci].
+            // Un build lancé à la main par un humain s'exécute toujours.
+            def lanceParUnHumain = !currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').isEmpty()
+            if (!lanceParUnHumain && sh(script: 'git log -1 --pretty=%B', returnStdout: true).contains('[skip ci]')) {
               env.SKIP_CI = 'true'
               currentBuild.result = 'NOT_BUILT'
               echo 'Commit de déploiement écrit par Jenkins : rien à construire.'
