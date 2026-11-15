@@ -1,6 +1,33 @@
 # kube-prometheus-stack allégé pour un poste de 16 Go
 alertmanager:
-  enabled: false            # alertes visibles dans Prometheus/Grafana ; pas d'envoi de notifications ici
+  enabled: true
+  alertmanagerSpec:
+    retention: 24h
+    resources:
+      requests: { memory: 64Mi, cpu: 20m }
+      limits:   { memory: 128Mi }
+  config:
+    global:
+      # Mailpit : faux serveur SMTP dans le cluster (aucun vrai mail envoyé, aucun mot de passe)
+      smtp_smarthost: mailpit.monitoring.svc:1025
+      smtp_from: alertmanager@portfolio.local
+      smtp_require_tls: false
+    route:
+      receiver: email
+      group_by: [alertname, namespace]
+      group_wait: 30s        # attend 30 s pour regrouper les alertes qui arrivent ensemble
+      group_interval: 5m     # délai avant de notifier une nouvelle alerte dans un groupe déjà notifié
+      repeat_interval: 4h    # relance si l'alerte est toujours active
+      routes:
+        # Watchdog sonne en permanence (preuve de vie) : on ne veut pas un mail toutes les 4 h
+        - receiver: "null"
+          matchers: ['alertname =~ "Watchdog|InfoInhibitor"']
+    receivers:
+      - name: "null"
+      - name: email
+        email_configs:
+          - to: equipe@portfolio.local
+            send_resolved: true   # mail aussi quand l'incident est résolu
 
 prometheus:
   prometheusSpec:
