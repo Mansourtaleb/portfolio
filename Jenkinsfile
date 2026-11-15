@@ -89,6 +89,7 @@ pipeline {
                             npm ci --prefer-offline --no-audit --no-fund
                             echo "$H" > node_modules/.lock-hash
                         fi
+                        npx ng test --watch=false --coverage   # tests unitaires (Vitest) + couverture lcov
                         npx ng build --configuration production
                     '''
                 }
